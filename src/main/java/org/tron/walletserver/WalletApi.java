@@ -360,7 +360,7 @@ public class WalletApi {
     return transaction;
   }
 
-  private Transaction signTransaction(ECKey ecKey, Transaction transaction) {
+  private static Transaction signTransaction(ECKey ecKey, Transaction transaction) {
     if (transaction.getRawData().getTimestamp() == 0) {
       transaction = TransactionUtils.setTimestamp(transaction);
     }
@@ -368,7 +368,7 @@ public class WalletApi {
     return transaction;
   }
 
-  private boolean processTransactionExtention(ECKey ecKey,
+  private static boolean processTransactionExtention(ECKey ecKey,
       TransactionExtention transactionExtention) {
     if (transactionExtention == null) {
       return false;
@@ -419,7 +419,7 @@ public class WalletApi {
     return rpcCli.broadcastTransaction(transaction);
   }
 
-  private boolean processTransaction(ECKey ecKey, Transaction transaction) {
+  private static boolean processTransaction(ECKey ecKey, Transaction transaction) {
     if (transaction == null || transaction.getRawData().getContractCount() == 0) {
       return false;
     }
@@ -517,8 +517,8 @@ public class WalletApi {
     }
   }
 
-  public boolean transferAsset(byte[] privateKey, byte[] to, byte[] assertName, long amount)
-      throws CipherException, IOException, CancelException {
+  public static boolean transferAsset(byte[] privateKey, byte[] to, byte[] assertName,
+      long amount) {
     ECKey ecKey = ECKey.fromPrivate(privateKey);
     byte[] owner = ecKey.getAddress();
     Contract.TransferAssetContract contract = createTransferAssetContract(to, assertName, owner,
