@@ -88,6 +88,7 @@ public class WalletApiWrapper {
 
     byte[] passwd = StringUtils.char2Byte(password);
     wallet.checkPassword(passwd);
+    wallet.setEcKey(passwd);
     StringUtils.clear(passwd);
 
     if (wallet == null) {

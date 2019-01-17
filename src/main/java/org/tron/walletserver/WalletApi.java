@@ -95,7 +95,7 @@ public class WalletApi {
   private byte[] address = null;
   private static byte addressPreFixByte = CommonConstant.ADD_PRE_FIX_BYTE_TESTNET;
   private static int rpcVersion = 0;
-
+  private ECKey ecKey = null;
   private static GrpcClient rpcCli = init();
 
 //  static {
@@ -348,34 +348,15 @@ public class WalletApi {
     return rpcCli.queryAccountById(accountId);
   }
 
-  private Transaction signTransaction(Transaction transaction)
-      throws CipherException, IOException, CancelException {
+  public void setEcKey(byte[] passwd) throws CipherException, IOException {
+    this.ecKey = this.getEcKey(passwd);
+  }
+
+  private Transaction signTransaction(Transaction transaction) {
     if (transaction.getRawData().getTimestamp() == 0) {
       transaction = TransactionUtils.setTimestamp(transaction);
     }
-    System.out.println("Your transaction details are as follows, please confirm.");
-    System.out.println(Utils.printTransaction(transaction));
-
-    Scanner in = new Scanner(System.in);
-    System.out.println("Please confirm that you want to continue enter y or Y, else any other.");
-
-    while (true) {
-      String input = in.nextLine().trim();
-      String str = input.split("\\s+")[0];
-      if ("y".equalsIgnoreCase(str)) {
-        break;
-      } else {
-        throw new CancelException("User cancelled");
-      }
-    }
-    System.out.println("Please input your password.");
-    char[] password = Utils.inputPassword(false);
-    byte[] passwd = org.tron.keystore.StringUtils.char2Byte(password);
-    org.tron.keystore.StringUtils.clear(password);
-    System.out.println(
-        "txid = " + ByteArray.toHexString(Sha256Hash.hash(transaction.getRawData().toByteArray())));
-    transaction = TransactionUtils.sign(transaction, this.getEcKey(passwd));
-    org.tron.keystore.StringUtils.clear(passwd);
+    transaction = TransactionUtils.sign(transaction, this.ecKey);
     return transaction;
   }
 
