@@ -1,5 +1,6 @@
 package org.tron.demo;
 
+import com.typesafe.config.Config;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,11 +14,14 @@ import org.tron.common.crypto.ECKey;
 import org.tron.common.crypto.Sha256Hash;
 import org.tron.common.utils.ByteArray;
 import org.tron.common.utils.Utils;
+import org.tron.core.config.Configuration;
+import org.tron.core.config.Parameter.CommonConstant;
 import org.tron.core.exception.CancelException;
 import org.tron.core.exception.CipherException;
 import org.tron.keystore.StringUtils;
 import org.tron.protos.Protocol.Transaction;
 import org.tron.walletcli.WalletApiWrapper;
+import org.tron.walletserver.GrpcClient;
 import org.tron.walletserver.WalletApi;
 
 public class Air_drop {
@@ -25,6 +29,20 @@ public class Air_drop {
   private static final Logger logger = LoggerFactory.getLogger("Client");
   private WalletApiWrapper walletApiWrapper = new WalletApiWrapper();
   private static final String filePath = "Address";
+  private String assetId;
+  private long amount;
+
+  public Air_drop() {
+    Config config = Configuration.getByPath("config.conf");
+
+    if (config.hasPath("assertId")) {
+      this.assetId = config.getString("assertId");
+    }
+
+    if (config.hasPath("amount")) {
+      this.amount = config.getLong("amount");
+    }
+  }
 
   private void loadWallet() throws IOException, CipherException {
     System.out.println("Please input your password.");
@@ -34,13 +52,14 @@ public class Air_drop {
     StringUtils.clear(password);
 
     if (result) {
-      System.out.println("Login successful !!!");
+      logger.info("Login successful !!!");
     } else {
-      System.out.println("Login failed !!!");
+      logger.info("Login failed !!!");
     }
   }
 
-  private void airDropAsset(String assetId) throws IOException, CipherException, CancelException {
+  private void airDropAsset()
+      throws IOException, CipherException, CancelException {
     File path = new File(filePath);
     if (!path.exists()) {
       throw new IOException("No directory");
@@ -57,7 +76,7 @@ public class Air_drop {
 
       String address;
       while ((address = bufferedReader.readLine()) != null) {
-        this.transferAsset(address, assetId, 100);
+        this.transferAsset(address, this.assetId, this.amount);
       }
     } catch (IOException e) {
       throw e;
@@ -79,9 +98,9 @@ public class Air_drop {
       throws CipherException, IOException, CancelException {
     boolean result = walletApiWrapper.transferAsset(toAddress, assertId, amount);
     if (result) {
-      logger.info("transferAsset " + amount + " " + assertId + " successful");
+      logger.info("transferAsset " + amount + " " + assertId + " to " + toAddress + " successful");
     } else {
-      logger.info("transferAsset " + amount + " " + assertId + " failed");
+      logger.info("transferAsset " + amount + " " + assertId + " to " + toAddress + " failed");
     }
     return result;
   }
@@ -90,6 +109,6 @@ public class Air_drop {
     Air_drop air_drop = new Air_drop();
     air_drop.loadWallet();
 
-    air_drop.airDropAsset("1001377");
+    air_drop.airDropAsset();
   }
 }
