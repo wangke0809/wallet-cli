@@ -159,6 +159,20 @@ public class WalletApiWrapper {
     return wallet.sendCoin(to, amount);
   }
 
+  public boolean transferAsset(byte[] privateKey, String toAddress, String assertName, long amount)
+      throws IOException, CipherException, CancelException {
+    if (wallet == null || !wallet.isLoginState()) {
+      logger.warn("Warning: TransferAsset failed,  Please login first !!");
+      return false;
+    }
+    byte[] to = WalletApi.decodeFromBase58Check(toAddress);
+    if (to == null) {
+      return false;
+    }
+
+    return wallet.transferAsset(privateKey, to, assertName.getBytes(), amount);
+  }
+
   public boolean transferAsset(String toAddress, String assertName, long amount)
       throws IOException, CipherException, CancelException {
     if (wallet == null || !wallet.isLoginState()) {

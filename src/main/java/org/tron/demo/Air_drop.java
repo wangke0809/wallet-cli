@@ -31,6 +31,8 @@ public class Air_drop {
   private static final String filePath = "Address";
   private String assetId;
   private long amount;
+  private int keyNum;
+  private byte[] privateKey = null;
 
   public Air_drop() {
     Config config = Configuration.getByPath("config.conf");
@@ -42,21 +44,30 @@ public class Air_drop {
     if (config.hasPath("amount")) {
       this.amount = config.getLong("amount");
     }
-  }
 
-  private void loadWallet() throws IOException, CipherException {
-    System.out.println("Please input your password.");
-    char[] password = Utils.inputPassword(false);
+    if (config.hasPath("privateKey")) {
+      String priKey = config.getString("privateKey");
+      privateKey = ByteArray.fromHexString(priKey);
+    }
 
-    boolean result = walletApiWrapper.login(password);
-    StringUtils.clear(password);
-
-    if (result) {
-      logger.info("Login successful !!!");
-    } else {
-      logger.info("Login failed !!!");
+    if (config.hasPath("KeyNum")) {
+      keyNum = config.getInt("KeyNum");
     }
   }
+
+//  private void loadWallet() throws IOException, CipherException {
+//    System.out.println("Please input your password.");
+//    char[] password = Utils.inputPassword(false);
+//
+//    boolean result = walletApiWrapper.login(password);
+//    StringUtils.clear(password);
+//
+//    if (result) {
+//      logger.info("Login successful !!!");
+//    } else {
+//      logger.info("Login failed !!!");
+//    }
+//  }
 
   private void airDropAsset()
       throws IOException, CipherException, CancelException {
@@ -76,7 +87,7 @@ public class Air_drop {
 
       String address;
       while ((address = bufferedReader.readLine()) != null) {
-        this.transferAsset(address, this.assetId, this.amount);
+        this.transferAsset(this.privateKey, address, this.assetId, this.amount);
       }
     } catch (IOException e) {
       throw e;
@@ -94,9 +105,9 @@ public class Air_drop {
     }
   }
 
-  private boolean transferAsset(String toAddress, String assertId, long amount)
+  private boolean transferAsset(byte[] privateKey, String toAddress, String assertId, long amount)
       throws CipherException, IOException, CancelException {
-    boolean result = walletApiWrapper.transferAsset(toAddress, assertId, amount);
+    boolean result = walletApiWrapper.transferAsset(privateKey, toAddress, assertId, amount);
     if (result) {
       logger.info("transferAsset " + amount + " " + assertId + " to " + toAddress + " successful");
     } else {
@@ -107,8 +118,6 @@ public class Air_drop {
 
   public static void main(String[] args) throws IOException, CipherException, CancelException {
     Air_drop air_drop = new Air_drop();
-    air_drop.loadWallet();
-
     air_drop.airDropAsset();
   }
 }
