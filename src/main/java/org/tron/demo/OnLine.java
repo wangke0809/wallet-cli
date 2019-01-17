@@ -33,6 +33,7 @@ public class OnLine {
   private static File transactionSignedFile = new File("transactionSigned.txt");
   private static File balanceFile = new File("balance.txt");
   private static File logs = new File("logs.txt");
+  private static boolean randAmount = false;
   private static GrpcClient rpcCli = null;
 
   private static Transaction createTransaction(Contract.TransferAssetContract contract) {
@@ -67,6 +68,10 @@ public class OnLine {
     }
     if (config.hasPath("assertId")) {
       assetId = config.getString("assertId");
+    }
+
+    if (config.hasPath("rand_amount")) {
+      randAmount = config.getBoolean("rand_amount");
     }
     rpcCli = new GrpcClient(fullNode, solidityNode);
   }
@@ -134,9 +139,12 @@ public class OnLine {
       String address;
       String number;
       int i = addressNumber;
+      long amount = totalBalance / i;
       while ((number = bufferedReader.readLine()) != null) {
         address = bufferedReader.readLine();
-        long amount = getRandomAmmount(totalBalance, i);
+        if (randAmount) {
+          amount = getRandomAmmount(totalBalance, i);
+        }
         i--;
         Transaction transaction = createTransaction(owner, WalletApi.decodeFromBase58Check(address),
             amount);
