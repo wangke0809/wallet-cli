@@ -1,6 +1,10 @@
 package org.tron.demo;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,8 +21,10 @@ import org.tron.walletcli.WalletApiWrapper;
 import org.tron.walletserver.WalletApi;
 
 public class Air_drop {
+
   private static final Logger logger = LoggerFactory.getLogger("Client");
   private WalletApiWrapper walletApiWrapper = new WalletApiWrapper();
+  private static final String filePath = "Address";
 
   private void loadWallet() throws IOException, CipherException {
     System.out.println("Please input your password.");
@@ -34,8 +40,39 @@ public class Air_drop {
     }
   }
 
-  private static void loadFile() {
+  private void airDropAsset(String assetId) throws IOException, CipherException, CancelException {
+    File path = new File(filePath);
+    if (!path.exists()) {
+      throw new IOException("No directory");
+    }
+    File addressFile = new File(path, "address.txt");
 
+    FileInputStream inputStream = null;
+    InputStreamReader inputStreamReader = null;
+    BufferedReader bufferedReader = null;
+    try {
+      inputStream = new FileInputStream(addressFile);
+      inputStreamReader = new InputStreamReader(inputStream);
+      bufferedReader = new BufferedReader(inputStreamReader);
+
+      String address;
+      while ((address = bufferedReader.readLine()) != null) {
+        this.transferAsset(address, assetId, 100);
+      }
+    } catch (IOException e) {
+      throw e;
+    } finally {
+      if (bufferedReader != null) {
+        bufferedReader.close();
+      }
+      if (inputStreamReader != null) {
+        inputStreamReader.close();
+
+      }
+      if (inputStream != null) {
+        inputStream.close();
+      }
+    }
   }
 
   private boolean transferAsset(String toAddress, String assertId, long amount)
@@ -53,6 +90,6 @@ public class Air_drop {
     Air_drop air_drop = new Air_drop();
     air_drop.loadWallet();
 
-    air_drop.transferAsset("TTbioAsbefqWxtoGk3MsKkUw7jgtFKPH9E", "1001377", 100);
+    air_drop.airDropAsset("1001377");
   }
 }
