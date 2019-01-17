@@ -4,24 +4,20 @@ import com.typesafe.config.Config;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Arrays;
+import java.io.OutputStreamWriter;
 import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tron.api.GrpcAPI.EasyTransferResponse;
 import org.tron.common.crypto.ECKey;
-import org.tron.common.crypto.Sha256Hash;
 import org.tron.common.utils.ByteArray;
 import org.tron.common.utils.Utils;
 import org.tron.core.config.Configuration;
-import org.tron.core.config.Parameter.CommonConstant;
 import org.tron.core.exception.CancelException;
 import org.tron.core.exception.CipherException;
-import org.tron.keystore.StringUtils;
 import org.tron.protos.Protocol.Account;
-import org.tron.protos.Protocol.Transaction;
 import org.tron.walletcli.WalletApiWrapper;
 import org.tron.walletserver.GrpcClient;
 import org.tron.walletserver.WalletApi;
@@ -29,14 +25,41 @@ import org.tron.walletserver.WalletApi;
 public class Air_drop {
 
   private static final Logger logger = LoggerFactory.getLogger("Client");
+  private static GrpcClient rpcCli = null;
   private WalletApiWrapper walletApiWrapper = new WalletApiWrapper();
   private static final String addresssFilePath = "Address";
   private static final String addresssFileName = "address.txt";
   private String assetId;
   private long amount;
   private boolean randAmount = false;
-  private int keyNum;
+  private static int addressNumber;
+  private static byte[] owner = null;
   private byte[] privateKey = null;
+
+  private static void initConfig() {
+    Config config = Configuration.getByPath("config-on.conf");
+
+    if (config.hasPath("AddressNum")) {
+      String keyNum = config.getString("AddressNum");
+      addressNumber = Integer.parseInt(keyNum);
+    } else {
+      addressNumber = 300;
+    }
+    if (config.hasPath("address")) {
+      String address = config.getString("address");
+      owner = WalletApi.decodeFromBase58Check(address);
+    }
+
+    String fullNode = "";
+    String solidityNode = "";
+    if (config.hasPath("soliditynode.ip.list")) {
+      solidityNode = config.getStringList("soliditynode.ip.list").get(0);
+    }
+    if (config.hasPath("fullnode.ip.list")) {
+      fullNode = config.getStringList("fullnode.ip.list").get(0);
+    }
+    rpcCli = new GrpcClient(fullNode, solidityNode);
+  }
 
   public Air_drop() {
     Config config = Configuration.getByPath("config.conf");
@@ -59,7 +82,7 @@ public class Air_drop {
     }
 
     if (config.hasPath("KeyNum")) {
-      keyNum = config.getInt("KeyNum");
+      addressNumber = config.getInt("KeyNum");
     }
   }
 
@@ -168,17 +191,69 @@ public class Air_drop {
     return result;
   }
 
+  private static File creteDirct() throws IOException {
+    File path = new File(addresssFilePath);
+    if (!path.exists()) {
+      if (!path.mkdir()) {
+        throw new IOException("Make directory failed!");
+      }
+    } else {
+      if (!path.isDirectory()) {
+        if (path.delete()) {
+          if (!path.mkdir()) {
+            throw new IOException("Make directory failed!");
+          }
+        } else {
+          throw new IOException("File exists and can not be deleted!");
+        }
+      }
+    }
+
+    return path;
+  }
+
+  private void genPrivateAddress() throws IOException {
+    int num = this.addressNumber;
+    File path = creteDirct();
+    long time = System.currentTimeMillis();
+    File privateFile = new File(path, time + "private.txt");
+    File addressFile = new File(path, time + "address.txt");
+    FileOutputStream privateWriter = new FileOutputStream(privateFile);
+    OutputStreamWriter privateOSW = new OutputStreamWriter(privateWriter);
+    FileOutputStream addressriter = new FileOutputStream(addressFile);
+    OutputStreamWriter addressOSW = new OutputStreamWriter(addressriter);
+
+    try {
+      for (int i = 0; i < num; i++) {
+        ECKey eCkey = new ECKey(Utils.getRandom());  //Gen new Keypair
+        byte[] address = eCkey.getAddress();
+        String base58checkAddress = WalletApi.encode58Check(address);
+        privateOSW.append(ByteArray.toHexString(eCkey.getPrivKeyBytes()) + "\n");
+        addressOSW.append(base58checkAddress + "\n");
+      }
+    } catch (Exception e) {
+      throw new IOException(e.getMessage());
+    } finally {
+      privateOSW.close();
+      addressOSW.close();
+      privateWriter.close();
+      addressriter.close();
+    }
+  }
+
   public static void main(String[] args) throws IOException, CipherException, CancelException {
     Air_drop air_drop = new Air_drop();
+    air_drop.genPrivateAddress();
+
     long total_0 = air_drop.queryBalance();
     air_drop.airDropAsset();
     long total_1 = air_drop.queryBalance();
 
-    if (total_0 == total_1){
+    if (total_0 == total_1) {
       logger.info("Total balance is same.");
-    }
-    else {
-      logger.info("Total balance is " + total_0 + " before transfer but " + total_1 + " after transfer.");
+    } else {
+      logger.info(
+          "Total balance is " + total_0 + " before transfer but " + total_1 + " after transfer.");
     }
   }
 }
