@@ -93,7 +93,7 @@ public class WalletApi {
   private WalletFile walletFile = null;
   private boolean loginState = false;
   private byte[] address = null;
-  private static byte addressPreFixByte = CommonConstant.ADD_PRE_FIX_BYTE_TESTNET;
+  private static byte addressPreFixByte = CommonConstant.ADD_PRE_FIX_BYTE_MAINNET;
   private static int rpcVersion = 0;
   private ECKey ecKey = null;
   private static GrpcClient rpcCli = init();
@@ -124,7 +124,7 @@ public class WalletApi {
     if (config.hasPath("net.type") && "mainnet".equalsIgnoreCase(config.getString("net.type"))) {
       WalletApi.setAddressPreFixByte(CommonConstant.ADD_PRE_FIX_BYTE_MAINNET);
     } else {
-      WalletApi.setAddressPreFixByte(CommonConstant.ADD_PRE_FIX_BYTE_TESTNET);
+      WalletApi.setAddressPreFixByte(CommonConstant.ADD_PRE_FIX_BYTE_MAINNET);
     }
     if (config.hasPath("RPC_version")) {
       rpcVersion = config.getInt("RPC_version");
