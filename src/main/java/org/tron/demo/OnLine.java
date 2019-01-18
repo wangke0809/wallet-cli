@@ -1,5 +1,6 @@
 package org.tron.demo;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.typesafe.config.Config;
 import java.io.BufferedReader;
@@ -9,15 +10,22 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.util.Date;
 import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tron.api.GrpcAPI.TransactionExtention;
 import org.tron.common.utils.ByteArray;
+import org.tron.common.utils.Utils;
 import org.tron.core.config.Configuration;
+import org.tron.core.exception.CancelException;
+import org.tron.core.exception.CipherException;
 import org.tron.protos.Contract;
+import org.tron.protos.Contract.AssetIssueContract;
 import org.tron.protos.Contract.TransferAssetContract;
 import org.tron.protos.Protocol.Account;
 import org.tron.protos.Protocol.Transaction;
+import org.tron.protos.Protocol.Transaction.Contract.ContractType;
 import org.tron.walletserver.GrpcClient;
 import org.tron.walletserver.WalletApi;
 
@@ -76,7 +84,7 @@ public class OnLine {
     rpcCli = new GrpcClient(fullNode, solidityNode);
   }
 
-  private static boolean sendCoin(Transaction transaction) throws InvalidProtocolBufferException {
+  private static boolean broadcastTransaction(Transaction transaction) {
     return rpcCli.broadcastTransaction(transaction);
   }
 
@@ -109,6 +117,19 @@ public class OnLine {
     return transaction;
   }
 
+  private static Transaction createAssetIssue(AssetIssueContract contract) {
+    Transaction transaction = rpcCli.createAssetIssue(contract);
+    if (transaction == null || transaction.getRawData().getContractCount() == 0) {
+      System.out.println(
+          "Create transaction issue " + contract.getName().toStringUtf8() + " failed !!!");
+      return null;
+    }
+
+    System.out.println(
+        "Create transaction issue " + contract.getName().toStringUtf8() + " successful !!!");
+    return transaction;
+  }
+
   private static long getRandomAmmount(long blance, int num) {
     if (num == 1) {
       return blance;
@@ -118,6 +139,81 @@ public class OnLine {
     long random = new Random().nextLong();
     random = random % ammout / 2;  //-0.5ammount< random < 0.5ammount
     return random + ammout;  //[0.5amount, 1.5ammount]
+  }
+
+  private static void issueAsset() throws IOException {
+    Config config = Configuration.getByPath("config-on.conf");
+    String assertName = config.getString("assertName");
+    String abbr = config.getString("abbr");
+    long totalSupply = config.getLong("totalSupply");
+    int precision = config.getInt("precision");
+    int trxNum = config.getInt("trxNum");
+    int tokenNum = config.getInt("tokenNum");
+    String startYyyyMmDd = config.getString("startYyyyMmDd");
+    String endYyyyMmDd = config.getString("endYyyyMmDd");
+    Date startDate = Utils.strToDateLong(startYyyyMmDd);
+    Date endDate = Utils.strToDateLong(endYyyyMmDd);
+    long startTime = startDate.getTime();
+    long endTime = endDate.getTime();
+    String description = config.getString("description");
+    String url = config.getString("url");
+    int freeNetLimitPerAccount = config.getInt("freeNetLimitPerAccount");
+    int publicFreeNetLimitString = config.getInt("publicFreeNetLimit");
+
+    long freeAssetNetLimit = new Long(freeNetLimitPerAccount);
+    long publicFreeNetLimit = new Long(publicFreeNetLimitString);
+
+    AssetIssueContract.Builder builder = AssetIssueContract.newBuilder();
+    builder.setOwnerAddress(ByteString.copyFrom(owner));
+    builder.setName(ByteString.copyFrom(assertName.getBytes()));
+    builder.setAbbr(ByteString.copyFrom(abbr.getBytes()));
+    builder.setTotalSupply(totalSupply);
+    builder.setTrxNum(trxNum);
+    builder.setPrecision(precision);
+    builder.setNum(tokenNum);
+    builder.setStartTime(startTime);
+    builder.setEndTime(endTime);
+    builder.setDescription(ByteString.copyFrom(description.getBytes()));
+    builder.setDescription(ByteString.copyFrom(url.getBytes()));
+    builder.setFreeAssetNetLimit(freeAssetNetLimit);
+    builder.setPublicFreeAssetNetLimit(publicFreeNetLimit);
+    Transaction transaction = createAssetIssue(builder.build());
+
+    FileInputStream inputStream = null;
+    InputStreamReader inputStreamReader = null;
+    BufferedReader bufferedReader = null;
+    FileOutputStream transactionFOS = null;
+    OutputStreamWriter transactionOSW = null;
+
+    try {
+      inputStream = new FileInputStream(addressFile);
+      inputStreamReader = new InputStreamReader(inputStream);
+      bufferedReader = new BufferedReader(inputStreamReader);
+
+      transactionFOS = new FileOutputStream(transactionFile);
+      transactionOSW = new OutputStreamWriter(transactionFOS);
+
+      transactionOSW.append("1 \n");
+      transactionOSW.append(ByteArray.toHexString(transaction.toByteArray()) + "\n");
+    } catch (IOException e) {
+      throw e;
+    } finally {
+      if (bufferedReader != null) {
+        bufferedReader.close();
+      }
+      if (inputStreamReader != null) {
+        inputStreamReader.close();
+      }
+      if (inputStream != null) {
+        inputStream.close();
+      }
+      if (transactionOSW != null) {
+        transactionOSW.close();
+      }
+      if (transactionFOS != null) {
+        transactionFOS.close();
+      }
+    }
   }
 
   private static void createTransaction() throws IOException {
@@ -175,7 +271,6 @@ public class OnLine {
     }
   }
 
-
   private static void sendCoin() throws IOException {
     FileInputStream inputStream = null;
     InputStreamReader inputStreamReader = null;
@@ -196,23 +291,42 @@ public class OnLine {
         transactionSigned = bufferedReader.readLine();
         Transaction transaction = Transaction.parseFrom(ByteArray.fromHexString(transactionSigned));
         Transaction.Contract contract = transaction.getRawData().getContract(0);
-        TransferAssetContract transferContract = contract.getParameter()
-            .unpack(TransferAssetContract.class);
-        long amount = transferContract.getAmount();
-        byte[] toAddress = transferContract.getToAddress().toByteArray();
-        String assertId = transferContract.getAssetName().toStringUtf8();
-        outputStreamWriter.append(number + "\n");
-        if (sendCoin(transaction)) {
-          System.out.println(
-              "Send " + amount + " " + assertId + " to " + WalletApi.encode58Check(toAddress)
-                  + " successful !!!");
-          outputStreamWriter.append(amount + " " + WalletApi.encode58Check(toAddress) + "\n");
-        } else {
-          System.out.println(
-              "Send " + amount + " " + assertId + " to " + WalletApi.encode58Check(toAddress)
-                  + " failed !!!");
-          outputStreamWriter
-              .append(amount + " " + WalletApi.encode58Check(toAddress) + " failed !!!" + "\n");
+        if (contract.getType() == ContractType.TransferAssetContract) {
+          TransferAssetContract transferContract = contract.getParameter()
+              .unpack(TransferAssetContract.class);
+          long amount = transferContract.getAmount();
+          byte[] toAddress = transferContract.getToAddress().toByteArray();
+          String assertId = transferContract.getAssetName().toStringUtf8();
+          outputStreamWriter.append(number + "\n");
+          if (broadcastTransaction(transaction)) {
+            System.out.println(
+                "Send " + amount + " " + assertId + " to " + WalletApi.encode58Check(toAddress)
+                    + " successful !!!");
+            outputStreamWriter.append(amount + " " + WalletApi.encode58Check(toAddress) + "\n");
+          } else {
+            System.out.println(
+                "Send " + amount + " " + assertId + " to " + WalletApi.encode58Check(toAddress)
+                    + " failed !!!");
+            outputStreamWriter
+                .append(amount + " " + WalletApi.encode58Check(toAddress) + " failed !!!" + "\n");
+          }
+        }
+        if (contract.getType() == ContractType.AssetIssueContract) {
+          AssetIssueContract assetIssueContract = contract.getParameter()
+              .unpack(AssetIssueContract.class);
+          String assertName = assetIssueContract.getName().toStringUtf8();
+          long totalSupply = assetIssueContract.getTotalSupply();
+          outputStreamWriter.append(number + "\n");
+          if (broadcastTransaction(transaction)) {
+            System.out.println(
+                "Issue " + assertName + " totalSupply " + totalSupply + " successful !!!");
+            outputStreamWriter.append(assertName + " " + totalSupply + "\n");
+          } else {
+            System.out.println(
+                "Issue " + assertName + " totalSupply " + totalSupply + " failed !!!");
+            outputStreamWriter
+                .append(assertName + " " + totalSupply + " failed !!!" + "\n");
+          }
         }
       }
     } catch (IOException e) {
@@ -291,7 +405,10 @@ public class OnLine {
     for (String arg : args) {
       System.out.println(arg);
     }
-
+    if (args[0].equals("Issue")) {
+      issueAsset();
+      return;
+    }
     if (args[0].equals("create")) {
       createTransaction();
       return;
