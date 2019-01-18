@@ -2,6 +2,7 @@ package org.tron.demo;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.rpc.Code;
 import com.typesafe.config.Config;
 import java.io.BufferedReader;
 import java.io.File;
@@ -14,6 +15,8 @@ import java.util.Date;
 import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tron.api.GrpcAPI.Return;
+import org.tron.api.GrpcAPI.Return.response_code;
 import org.tron.api.GrpcAPI.TransactionExtention;
 import org.tron.common.utils.ByteArray;
 import org.tron.common.utils.Utils;
@@ -118,16 +121,22 @@ public class OnLine {
   }
 
   private static Transaction createAssetIssue(AssetIssueContract contract) {
-    Transaction transaction = rpcCli.createAssetIssue(contract);
-    if (transaction == null || transaction.getRawData().getContractCount() == 0) {
+    TransactionExtention transaction = rpcCli.createAssetIssue2(contract);
+    if (transaction== null || transaction.getResult().getCode() != response_code.SUCCESS) {
       System.out.println(
           "Create transaction issue " + contract.getName().toStringUtf8() + " failed !!!");
+      System.out.println("Code : " + transaction.getResult().getCode() + " Message : " + transaction.getResult().getMessage().toStringUtf8() );
       return null;
     }
 
     System.out.println(
         "Create transaction issue " + contract.getName().toStringUtf8() + " successful !!!");
-    return transaction;
+
+
+    Transaction.raw rawData = transaction.getTransaction().getRawData().toBuilder()
+        .setExpiration(System.currentTimeMillis() + 60 * 60 * 1000L).build(); //1h
+    Transaction transaction1 = transaction.getTransaction().toBuilder().setRawData(rawData).build();
+    return transaction1;
   }
 
   private static long getRandomAmmount(long blance, int num) {
@@ -141,8 +150,7 @@ public class OnLine {
     return random + ammout;  //[0.5amount, 1.5ammount]
   }
 
-  private static void issueAsset() throws IOException {
-    Config config = Configuration.getByPath("config-on.conf");
+  private static void issueAsset() throws IOException { Config config = Configuration.getByPath("config-on.conf");
     String assertName = config.getString("assertName");
     String abbr = config.getString("abbr");
     long totalSupply = config.getLong("totalSupply");
@@ -174,22 +182,15 @@ public class OnLine {
     builder.setStartTime(startTime);
     builder.setEndTime(endTime);
     builder.setDescription(ByteString.copyFrom(description.getBytes()));
-    builder.setDescription(ByteString.copyFrom(url.getBytes()));
+    builder.setUrl(ByteString.copyFrom(url.getBytes()));
     builder.setFreeAssetNetLimit(freeAssetNetLimit);
     builder.setPublicFreeAssetNetLimit(publicFreeNetLimit);
     Transaction transaction = createAssetIssue(builder.build());
 
-    FileInputStream inputStream = null;
-    InputStreamReader inputStreamReader = null;
-    BufferedReader bufferedReader = null;
     FileOutputStream transactionFOS = null;
     OutputStreamWriter transactionOSW = null;
 
     try {
-      inputStream = new FileInputStream(addressFile);
-      inputStreamReader = new InputStreamReader(inputStream);
-      bufferedReader = new BufferedReader(inputStreamReader);
-
       transactionFOS = new FileOutputStream(transactionFile);
       transactionOSW = new OutputStreamWriter(transactionFOS);
 
@@ -198,15 +199,6 @@ public class OnLine {
     } catch (IOException e) {
       throw e;
     } finally {
-      if (bufferedReader != null) {
-        bufferedReader.close();
-      }
-      if (inputStreamReader != null) {
-        inputStreamReader.close();
-      }
-      if (inputStream != null) {
-        inputStream.close();
-      }
       if (transactionOSW != null) {
         transactionOSW.close();
       }
@@ -405,7 +397,7 @@ public class OnLine {
     for (String arg : args) {
       System.out.println(arg);
     }
-    if (args[0].equals("Issue")) {
+    if (args[0].equals("issue")) {
       issueAsset();
       return;
     }
