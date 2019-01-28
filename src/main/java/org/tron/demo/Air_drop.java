@@ -8,43 +8,78 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.util.Random;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tron.common.crypto.ECKey;
+import org.tron.common.crypto.Sha256Hash;
 import org.tron.common.utils.ByteArray;
-import org.tron.common.utils.Utils;
+import org.tron.common.utils.TransactionUtils;
 import org.tron.core.config.Configuration;
-import org.tron.core.exception.CancelException;
-import org.tron.core.exception.CipherException;
+import org.tron.protos.Contract;
+import org.tron.protos.Contract.TransferAssetContract;
 import org.tron.protos.Protocol.Account;
-import org.tron.walletcli.WalletApiWrapper;
+import org.tron.protos.Protocol.Transaction;
+import org.tron.protos.Protocol.Transaction.Contract.ContractType;
 import org.tron.walletserver.GrpcClient;
 import org.tron.walletserver.WalletApi;
 
+class AirException extends Exception {
+
+  public AirException(String msg) {
+    super(msg);
+  }
+}
+
 public class Air_drop {
 
-  private static final Logger logger = LoggerFactory.getLogger("Client");
-  private static GrpcClient rpcCli = null;
-  private WalletApiWrapper walletApiWrapper = new WalletApiWrapper();
-  private static final String addresssFilePath = "Address";
-  private static final String addresssFileName = "address.txt";
-  private String assetId;
-  private long amount;
-  private boolean randAmount = false;
-  private static int addressNumber;
   private static byte[] owner = null;
-  private byte[] privateKey = null;
+  private static byte[] privateKey;
+
+
+  private static final Logger logger = LoggerFactory.getLogger("Client");
+  private static String assetId;
+  private static File addressFile = new File("address.txt");
+  private static File transactionFile = new File("transaction.txt");
+  private static File transactionSignedFile = new File("transactionSigned.txt");
+  private static File logs = new File("logs.txt");
+  private static File txIdFile = new File("txid.txt");
+  private static File lostAddress = new File("lostaddress.txt");
+  private static GrpcClient rpcCli = null;
+
+  private static Transaction createTransaction(Contract.TransferAssetContract contract) {
+    Transaction transaction = rpcCli.createTransferAssetTransaction(contract);
+    Transaction.raw rawData = transaction.getRawData().toBuilder()
+        .setExpiration(System.currentTimeMillis() + 6 * 60 * 60 * 1000L).build(); //6h
+    transaction = transaction.toBuilder().setRawData(rawData).build();
+    return transaction;
+  }
+
+  private static void printLostAddress(String address, long amount) throws IOException {
+    FileOutputStream transactionFOS = null;
+    OutputStreamWriter transactionOSW = null;
+
+    try {
+      transactionFOS = new FileOutputStream(lostAddress, true);
+      transactionOSW = new OutputStreamWriter(transactionFOS);
+
+      transactionOSW.append(address + " " + amount + "\n");
+    } catch (IOException e) {
+      throw e;
+    } finally {
+
+      if (transactionOSW != null) {
+        transactionOSW.close();
+      }
+      if (transactionFOS != null) {
+        transactionFOS.close();
+      }
+    }
+  }
 
   private static void initConfig() {
     Config config = Configuration.getByPath("config-on.conf");
 
-    if (config.hasPath("AddressNum")) {
-      String keyNum = config.getString("AddressNum");
-      addressNumber = Integer.parseInt(keyNum);
-    } else {
-      addressNumber = 300;
-    }
     if (config.hasPath("address")) {
       String address = config.getString("address");
       owner = WalletApi.decodeFromBase58Check(address);
@@ -58,68 +93,92 @@ public class Air_drop {
     if (config.hasPath("fullnode.ip.list")) {
       fullNode = config.getStringList("fullnode.ip.list").get(0);
     }
-    rpcCli = new GrpcClient(fullNode, solidityNode);
-  }
-
-  public Air_drop() {
-    Config config = Configuration.getByPath("config.conf");
-
     if (config.hasPath("assertId")) {
-      this.assetId = config.getString("assertId");
+      assetId = config.getString("assertId");
     }
-
-    if (config.hasPath("amount")) {
-      this.amount = config.getLong("amount");
-    }
-
-    if (config.hasPath("rand_amount")) {
-      this.randAmount = config.getBoolean("rand_amount");
-    }
-
     if (config.hasPath("privateKey")) {
       String priKey = config.getString("privateKey");
       privateKey = ByteArray.fromHexString(priKey);
     }
-
-    if (config.hasPath("KeyNum")) {
-      addressNumber = config.getInt("KeyNum");
-    }
+    rpcCli = new GrpcClient(fullNode, solidityNode);
   }
 
-  private long getBalance(byte[] address) {
+  private static boolean broadcastTransaction(Transaction transaction) {
+    return rpcCli.broadcastTransaction(transaction);
+  }
+
+  private static long getBalance(byte[] address) {
     Account account = WalletApi.queryAccount(address);
     long balance = 0;
-    if (account != null && account.getAssetV2().containsKey(this.assetId)) {
-      balance = account.getAssetV2().get(this.assetId);
+    if (account != null && account.getAssetV2().containsKey(assetId)) {
+      balance = account.getAssetV2().get(assetId);
     }
     logger.info(WalletApi.encode58Check(address) + "'s balance is " + balance);
     return balance;
   }
 
-  private long queryBalance() throws IOException {
-    byte[] owner = ECKey.fromPrivate(this.privateKey).getAddress();
-    long totalBalance = 0;
-    long balance = getBalance(owner);
-    totalBalance += balance;
-
-    File path = new File(addresssFilePath);
-    if (!path.exists()) {
-      throw new IOException("No directory");
+  private static boolean searchTransaction(String txid) {
+    Optional<Transaction> result = WalletApi.getTransactionById(txid);
+    if (!result.isPresent()) {
+      return false;
     }
-    File addressFile = new File(path, addresssFileName);
 
+    Transaction transaction = result.get();
+    if (transaction == null) {
+      return false;
+    }
+    
+    return true;
+  }
+
+  private static Transaction createTransaction(byte[] owner, byte[] toAddress, long amount) {
+    Contract.TransferAssetContract contract = WalletApi
+        .createTransferAssetContract(toAddress, assetId.getBytes(), owner, amount);
+    Transaction transaction = createTransaction(contract);
+    if (transaction == null || transaction.getRawData().getContractCount() == 0) {
+      System.out.println(
+          "Create transaction transfer " + amount + " " + assetId + " to " + WalletApi
+              .encode58Check(toAddress)
+              + " failed !!!");
+      return null;
+    }
+
+    System.out.println(
+        "Create transaction transfer " + amount + " " + assetId + " to " + WalletApi
+            .encode58Check(toAddress)
+            + " successful !!!");
+    return transaction;
+  }
+
+  private static void createTransaction() throws IOException {
     FileInputStream inputStream = null;
     InputStreamReader inputStreamReader = null;
     BufferedReader bufferedReader = null;
+    FileOutputStream transactionFOS = null;
+    OutputStreamWriter transactionOSW = null;
+
     try {
       inputStream = new FileInputStream(addressFile);
       inputStreamReader = new InputStreamReader(inputStream);
       bufferedReader = new BufferedReader(inputStreamReader);
 
+      transactionFOS = new FileOutputStream(transactionFile);
+      transactionOSW = new OutputStreamWriter(transactionFOS);
+
       String address;
-      while ((address = bufferedReader.readLine()) != null) {
-        balance = getBalance(WalletApi.decodeFromBase58Check(address));
-        totalBalance += balance;
+      String number;
+      while ((number = bufferedReader.readLine()) != null) {
+        long amount = Long.parseLong(number);
+        address = bufferedReader.readLine();
+        Transaction transaction = createTransaction(owner, WalletApi.decodeFromBase58Check(address),
+            amount);
+        if (transaction == null) {
+          printLostAddress(address, amount);
+          continue;
+        }
+        transactionOSW.append(number + "\n");
+        transactionOSW.append(ByteArray.toHexString(transaction.toByteArray()) + "\n");
+
       }
     } catch (IOException e) {
       throw e;
@@ -129,131 +188,222 @@ public class Air_drop {
       }
       if (inputStreamReader != null) {
         inputStreamReader.close();
-
       }
       if (inputStream != null) {
         inputStream.close();
       }
+      if (transactionOSW != null) {
+        transactionOSW.close();
+      }
+      if (transactionFOS != null) {
+        transactionFOS.close();
+      }
     }
-    logger.info("Total balance is " + totalBalance);
-    return totalBalance;
   }
 
-  private void airDropAsset()
-      throws IOException, CipherException, CancelException {
-    File path = new File(addresssFilePath);
-    if (!path.exists()) {
-      throw new IOException("No directory");
-    }
-    File addressFile = new File(path, addresssFileName);
-
+  private static void sendCoin() throws IOException {
     FileInputStream inputStream = null;
     InputStreamReader inputStreamReader = null;
     BufferedReader bufferedReader = null;
+    FileOutputStream outputStream = null;
+    OutputStreamWriter outputStreamWriter = null;
+
+    FileOutputStream outputStreamTxid = null;
+    OutputStreamWriter outputStreamWriterTxid = null;
     try {
-      inputStream = new FileInputStream(addressFile);
+      inputStream = new FileInputStream(transactionSignedFile);
       inputStreamReader = new InputStreamReader(inputStream);
       bufferedReader = new BufferedReader(inputStreamReader);
 
-      String address;
-      while ((address = bufferedReader.readLine()) != null) {
-        this.transferAsset(this.privateKey, address, this.assetId, this.amount, this.randAmount);
-      }
-    } catch (IOException e) {
-      throw e;
-    } finally {
-      if (bufferedReader != null) {
-        bufferedReader.close();
-      }
-      if (inputStreamReader != null) {
-        inputStreamReader.close();
+      outputStream = new FileOutputStream(logs);
+      outputStreamWriter = new OutputStreamWriter(outputStream);
 
-      }
-      if (inputStream != null) {
-        inputStream.close();
-      }
-    }
-  }
+      outputStreamTxid = new FileOutputStream(txIdFile);
+      outputStreamWriterTxid = new OutputStreamWriter(outputStreamTxid);
 
-  private boolean transferAsset(byte[] privateKey, String toAddress, String assertId, long amount,
-      boolean randAmount)
-      throws CipherException, IOException, CancelException {
-    if (randAmount) {
-      amount = new Random().nextInt((int) amount) + amount / 2;
-    }
-
-    boolean result = walletApiWrapper.transferAsset(privateKey, toAddress, assertId, amount);
-    if (result) {
-      logger.info("transferAsset " + amount + " " + assertId + " to " + toAddress + " successful");
-    } else {
-      logger.info("transferAsset " + amount + " " + assertId + " to " + toAddress + " failed");
-    }
-    return result;
-  }
-
-  private static File creteDirct() throws IOException {
-    File path = new File(addresssFilePath);
-    if (!path.exists()) {
-      if (!path.mkdir()) {
-        throw new IOException("Make directory failed!");
-      }
-    } else {
-      if (!path.isDirectory()) {
-        if (path.delete()) {
-          if (!path.mkdir()) {
-            throw new IOException("Make directory failed!");
+      String transactionSigned;
+      String number;
+      while ((number = bufferedReader.readLine()) != null) {
+        transactionSigned = bufferedReader.readLine();
+        Transaction transaction = Transaction.parseFrom(ByteArray.fromHexString(transactionSigned));
+        Transaction.Contract contract = transaction.getRawData().getContract(0);
+        if (contract.getType() == ContractType.TransferAssetContract) {
+          TransferAssetContract transferContract = contract.getParameter()
+              .unpack(TransferAssetContract.class);
+          long amount = transferContract.getAmount();
+          byte[] toAddress = transferContract.getToAddress().toByteArray();
+          String assertId = transferContract.getAssetName().toStringUtf8();
+          outputStreamWriter.append(number + "\n");
+          outputStreamWriterTxid.append(number + "\n");
+          if (broadcastTransaction(transaction)) {
+            System.out.println(
+                "Send " + amount + " " + assertId + " to " + WalletApi.encode58Check(toAddress)
+                    + " successful !!!");
+            outputStreamWriter.append(amount + " " + WalletApi.encode58Check(toAddress) + "\n");
+            String txid = ByteArray
+                .toHexString(Sha256Hash.hash(transaction.getRawData().toByteArray()));
+            outputStreamWriterTxid
+                .append(txid + " " + WalletApi.encode58Check(toAddress) + " " + amount);
+          } else {
+            System.out.println(
+                "Send " + amount + " " + assertId + " to " + WalletApi.encode58Check(toAddress)
+                    + " failed !!!");
+            outputStreamWriter
+                .append(amount + " " + WalletApi.encode58Check(toAddress) + " failed !!!" + "\n");
+            printLostAddress(WalletApi.encode58Check(toAddress), amount);
           }
-        } else {
-          throw new IOException("File exists and can not be deleted!");
         }
       }
-    }
+    } catch (IOException e) {
+      throw e;
+    } finally {
+      if (bufferedReader != null) {
+        bufferedReader.close();
+      }
+      if (inputStreamReader != null) {
+        inputStreamReader.close();
 
-    return path;
+      }
+      if (inputStream != null) {
+        inputStream.close();
+      }
+      if (outputStreamWriter != null) {
+        outputStreamWriter.close();
+      }
+      if (outputStream != null) {
+        outputStream.close();
+      }
+      if (outputStreamWriterTxid != null) {
+        outputStreamWriterTxid.close();
+      }
+      if (outputStreamTxid != null) {
+        outputStreamTxid.close();
+      }
+    }
   }
 
-  private void genPrivateAddress() throws IOException {
-    int num = this.addressNumber;
-    File path = creteDirct();
-    long time = System.currentTimeMillis();
-    File privateFile = new File(path, time + "private.txt");
-    File addressFile = new File(path, time + "address.txt");
-    FileOutputStream privateWriter = new FileOutputStream(privateFile);
-    OutputStreamWriter privateOSW = new OutputStreamWriter(privateWriter);
-    FileOutputStream addressriter = new FileOutputStream(addressFile);
-    OutputStreamWriter addressOSW = new OutputStreamWriter(addressriter);
+  private static void signTransaction(byte[] privateKey) throws IOException {
+    File transactionSignedFile = new File("transactionSigned.txt");
+    File transactionFile = new File("transaction.txt");
+    FileInputStream inputStream = null;
+    InputStreamReader inputStreamReader = null;
+    BufferedReader bufferedReader = null;
+    FileOutputStream outputStream = null;
+    OutputStreamWriter outputStreamWriter = null;
+    ECKey ecKey = ECKey.fromPrivate(privateKey);
+    try {
+      inputStream = new FileInputStream(transactionFile);
+      inputStreamReader = new InputStreamReader(inputStream);
+      bufferedReader = new BufferedReader(inputStreamReader);
+
+      outputStream = new FileOutputStream(transactionSignedFile);
+      outputStreamWriter = new OutputStreamWriter(outputStream);
+
+      String transaction;
+      String number;
+      while ((number = bufferedReader.readLine()) != null) {
+        transaction = bufferedReader.readLine();
+        Transaction transaction1 = Transaction.parseFrom(ByteArray.fromHexString(transaction));
+        transaction1 = TransactionUtils.setTimestamp(transaction1);
+        transaction1 = TransactionUtils.sign(transaction1, ecKey);
+        outputStreamWriter.append(number + "\n");
+        outputStreamWriter.append(ByteArray.toHexString(transaction1.toByteArray()) + "\n");
+      }
+    } catch (IOException e) {
+      throw e;
+    } finally {
+      if (bufferedReader != null) {
+        bufferedReader.close();
+      }
+      if (inputStreamReader != null) {
+        inputStreamReader.close();
+
+      }
+      if (inputStream != null) {
+        inputStream.close();
+      }
+      if (outputStreamWriter != null) {
+        outputStreamWriter.close();
+      }
+      if (outputStream != null) {
+        outputStream.close();
+      }
+    }
+  }
+
+  private static void queryTransaction() throws IOException {
+    FileInputStream inputStream = null;
+    InputStreamReader inputStreamReader = null;
+    BufferedReader bufferedReader = null;
 
     try {
-      for (int i = 0; i < num; i++) {
-        ECKey eCkey = new ECKey(Utils.getRandom());  //Gen new Keypair
-        byte[] address = eCkey.getAddress();
-        String base58checkAddress = WalletApi.encode58Check(address);
-        privateOSW.append(ByteArray.toHexString(eCkey.getPrivKeyBytes()) + "\n");
-        addressOSW.append(base58checkAddress + "\n");
+      inputStream = new FileInputStream(txIdFile);
+      inputStreamReader = new InputStreamReader(inputStream);
+      bufferedReader = new BufferedReader(inputStreamReader);
+
+      String data;
+      while ((data = bufferedReader.readLine()) != null) {
+        String[] datas = data.split(" ");
+        if (datas.length != 3) {
+          continue;
+        }
+        String txid = datas[0];
+        String address = datas[1];
+        String amountStr = datas[2];
+        Long amount = 0L;
+        try {
+          amount = Long.parseLong(amountStr);
+        } catch (NumberFormatException e) {
+          continue;
+        }
+        if (!searchTransaction(txid)) {
+          printLostAddress(address, amount);
+        }
       }
-    } catch (Exception e) {
-      throw new IOException(e.getMessage());
+    } catch (IOException e) {
+      throw e;
     } finally {
-      privateOSW.close();
-      addressOSW.close();
-      privateWriter.close();
-      addressriter.close();
+      if (bufferedReader != null) {
+        bufferedReader.close();
+      }
+      if (inputStreamReader != null) {
+        inputStreamReader.close();
+      }
+      if (inputStream != null) {
+        inputStream.close();
+      }
     }
   }
 
-  public static void main(String[] args) throws IOException, CipherException, CancelException {
-    Air_drop air_drop = new Air_drop();
-    air_drop.genPrivateAddress();
+  public static void main(String[] args) throws IOException {
+    initConfig();
 
-    long total_0 = air_drop.queryBalance();
-    air_drop.airDropAsset();
-    long total_1 = air_drop.queryBalance();
-
-    if (total_0 == total_1) {
-      logger.info("Total balance is same.");
-    } else {
-      logger.info(
-          "Total balance is " + total_0 + " before transfer but " + total_1 + " after transfer.");
+    for (String arg : args) {
+      System.out.println(arg);
     }
+    if (args[0].equals("airdrop")) {
+      createTransaction();
+      signTransaction(privateKey);
+      sendCoin();
+      queryTransaction();
+    }
+
+    if (args[0].equals("create")) {
+      createTransaction();
+      return;
+    }
+    if (args[0].equals("sign")) {
+      signTransaction(privateKey);
+      return;
+    }
+    if (args[0].equals("send")) {
+      sendCoin();
+      return;
+    }
+    if (args[0].equals("query")) {
+      queryTransaction();
+      return;
+    }
+
   }
 }
