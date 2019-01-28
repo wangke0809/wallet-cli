@@ -39,7 +39,7 @@ public class Air_drop {
 
   private static final Logger logger = LoggerFactory.getLogger("Client");
   private static String assetId;
-  private static File addressFile = new File("address.txt");
+  private static File addressFile = new File("account.csv");
   private static File transactionFile = new File("transaction.txt");
   private static File transactionSignedFile = new File("transactionSigned.txt");
   private static File logs = new File("logs.txt");
@@ -127,7 +127,7 @@ public class Air_drop {
     if (transaction == null) {
       return false;
     }
-    
+
     return true;
   }
 
@@ -166,10 +166,15 @@ public class Air_drop {
       transactionOSW = new OutputStreamWriter(transactionFOS);
 
       String address;
-      String number;
-      while ((number = bufferedReader.readLine()) != null) {
-        long amount = Long.parseLong(number);
-        address = bufferedReader.readLine();
+      String data = bufferedReader.readLine();
+      long number = 0;
+      while ((data = bufferedReader.readLine()) != null) {
+        String[] datas = data.split(",");
+        long amount = Long.parseLong(datas[1]);
+        if (amount <= 0){
+          continue;
+        }
+        address = datas[0];
         Transaction transaction = createTransaction(owner, WalletApi.decodeFromBase58Check(address),
             amount);
         if (transaction == null) {
@@ -177,6 +182,7 @@ public class Air_drop {
           continue;
         }
         transactionOSW.append(number + "\n");
+        number++;
         transactionOSW.append(ByteArray.toHexString(transaction.toByteArray()) + "\n");
 
       }
