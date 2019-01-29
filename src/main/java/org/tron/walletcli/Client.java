@@ -1523,22 +1523,6 @@ public class Client {
     }
   }
 
-  private void getMerklePath(String[] parameters) {
-    String rt = "";
-    if (parameters == null || parameters.length != 1) {
-      System.out.println("get needs 1 parameter, root hash");
-      return;
-    } else {
-      rt = parameters[0];
-    }
-    Optional<MerklePath> result = WalletApi.getMerklePath(rt);
-    if (result.isPresent()) {
-      MerklePath merklePath = result.get();
-      logger.info(merklePath.toString());
-    } else {
-      logger.info("getMerklePath " + " failed !!");
-    }
-  }
 
   private void getBestMerkleRoot() {
     Optional<BytesMessage> result = WalletApi.getBestMerkleRoot();
@@ -1910,7 +1894,6 @@ public class Client {
     System.out.println("GetDelegatedResourceAccountIndex");
     System.out.println("GetExchange");
     System.out.println("GetBestMerkleRoot");
-    System.out.println("GetMerklePath");
     System.out.println("GetMerkleTreeWitness");
     System.out.println("GetNextMaintenanceTime");
     System.out.println("GetNullifier");
@@ -2354,10 +2337,6 @@ public class Client {
           }
           case "getnullifier": {
             getNullifier(parameters);
-            break;
-          }
-          case "getmerklepath": {
-            getMerklePath(parameters);
             break;
           }
           case "getbestmerkleroot": {

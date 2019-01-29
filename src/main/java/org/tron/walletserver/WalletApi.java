@@ -1630,10 +1630,6 @@ public class WalletApi {
     return rpcCli.getNullifier(nfID);
   }
 
-  public static Optional<MerklePath> getMerklePath(String rt) {
-    return rpcCli.getMerklePath(rt);
-  }
-
   public static Optional<BytesMessage> getBestMerkleRoot() {
     return rpcCli.getBestMerkleRoot();
   }

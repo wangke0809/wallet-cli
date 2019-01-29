@@ -790,14 +790,6 @@ public class GrpcClient {
     return Optional.ofNullable(trxId);
   }
 
-  public Optional<MerklePath> getMerklePath(String rt) {
-    ByteString bsRt = ByteString.copyFrom(ByteArray.fromHexString(rt));
-    BytesMessage request = BytesMessage.newBuilder().setValue(bsRt).build();
-    MerklePath merklePath;
-    merklePath = blockingStubFull.getMerklePath(request);
-    return Optional.ofNullable(merklePath);
-  }
-
   public Optional<BytesMessage> getBestMerkleRoot() {
     BytesMessage rt = blockingStubFull.getBestMerkleRoot(EmptyMessage.newBuilder().build());
     return Optional.ofNullable(rt);
