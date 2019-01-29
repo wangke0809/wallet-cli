@@ -58,7 +58,6 @@ import org.tron.core.exception.ItemNotFoundException;
 import org.tron.keystore.StringUtils;
 import org.tron.protos.Contract.AssetIssueContract;
 import org.tron.protos.Contract.IncrementalMerkleWitness;
-import org.tron.protos.Contract.MerklePath;
 import org.tron.protos.Contract.ShieldAddress;
 import org.tron.protos.Contract.ZksnarkV0TransferContract;
 import org.tron.protos.Protocol.Account;
@@ -530,7 +529,7 @@ public class Client {
       System.out.println("SendCoinShield needs 8 parameters like following: ");
       System.out.println(
           "SendCoinShield AmountFromPub ToPubAddress AmoutToPub CM1 CM2 ToAddress1 Amount1 ToAddress2 Amount2 synBlockNum");
-      System.out.println("If donot input you can input null or 0");
+      System.out.println("If do not input you can input null or 0");
       return;
     }
     String amoutFromPub = parameters[0];
