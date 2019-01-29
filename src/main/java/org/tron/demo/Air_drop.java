@@ -11,6 +11,8 @@ import java.io.OutputStreamWriter;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.tron.api.GrpcAPI.Return.response_code;
+import org.tron.api.GrpcAPI.TransactionExtention;
 import org.tron.common.crypto.ECKey;
 import org.tron.common.crypto.Sha256Hash;
 import org.tron.common.utils.ByteArray;
@@ -45,10 +47,17 @@ public class Air_drop {
   private static File logs = new File("logs.txt");
   private static File txIdFile = new File("txid.txt");
   private static File lostAddress = new File("lostaddress.txt");
+  private static long TRX_MIN;
+  private static long TRX_NUM;
+  private static long BTT_NUM;
   private static GrpcClient rpcCli = null;
 
   private static Transaction createTransaction(Contract.TransferAssetContract contract) {
-    Transaction transaction = rpcCli.createTransferAssetTransaction(contract);
+    TransactionExtention extention = rpcCli.createTransferAssetTransaction2(contract);
+    if (extention.getResult().getCode() != response_code.SUCCESS) {
+      return null;
+    }
+    Transaction transaction = extention.getTransaction();
     Transaction.raw rawData = transaction.getRawData().toBuilder()
         .setExpiration(System.currentTimeMillis() + 6 * 60 * 60 * 1000L).build(); //6h
     transaction = transaction.toBuilder().setRawData(rawData).build();
@@ -63,7 +72,7 @@ public class Air_drop {
       transactionFOS = new FileOutputStream(lostAddress, true);
       transactionOSW = new OutputStreamWriter(transactionFOS);
 
-      transactionOSW.append(address + " " + amount + "\n");
+      transactionOSW.append(address + "," + amount + "\n");
     } catch (IOException e) {
       throw e;
     } finally {
@@ -78,7 +87,7 @@ public class Air_drop {
   }
 
   private static void initConfig() {
-    Config config = Configuration.getByPath("config-on.conf");
+    Config config = Configuration.getByPath("config-air.conf");
 
     if (config.hasPath("address")) {
       String address = config.getString("address");
@@ -95,6 +104,15 @@ public class Air_drop {
     }
     if (config.hasPath("assertId")) {
       assetId = config.getString("assertId");
+    }
+    if (config.hasPath("TRX_MIN")) {
+      TRX_MIN = config.getLong("TRX_MIN");
+    }
+    if (config.hasPath("TRX_NUM")) {
+      TRX_NUM = config.getLong("TRX_NUM");
+    }
+    if (config.hasPath("BTT_NUM")) {
+      BTT_NUM = config.getLong("BTT_NUM");
     }
     if (config.hasPath("privateKey")) {
       String priKey = config.getString("privateKey");
@@ -151,6 +169,7 @@ public class Air_drop {
   }
 
   private static void createTransaction() throws IOException {
+    System.out.println("Start createTransaction.");
     FileInputStream inputStream = null;
     InputStreamReader inputStreamReader = null;
     BufferedReader bufferedReader = null;
@@ -171,7 +190,11 @@ public class Air_drop {
       while ((data = bufferedReader.readLine()) != null) {
         String[] datas = data.split(",");
         long amount = Long.parseLong(datas[1]);
-        if (amount <= 0){
+        if (amount < TRX_MIN) {
+          continue;
+        }
+        amount = amount * BTT_NUM / TRX_NUM;
+        if (amount <= 0) {
           continue;
         }
         address = datas[0];
@@ -205,9 +228,11 @@ public class Air_drop {
         transactionFOS.close();
       }
     }
+    System.out.println("End createTransaction.");
   }
 
   private static void sendCoin() throws IOException {
+    System.out.println("Start sendCoin.");
     FileInputStream inputStream = null;
     InputStreamReader inputStreamReader = null;
     BufferedReader bufferedReader = null;
@@ -240,16 +265,16 @@ public class Air_drop {
           byte[] toAddress = transferContract.getToAddress().toByteArray();
           String assertId = transferContract.getAssetName().toStringUtf8();
           outputStreamWriter.append(number + "\n");
-          outputStreamWriterTxid.append(number + "\n");
           if (broadcastTransaction(transaction)) {
             System.out.println(
                 "Send " + amount + " " + assertId + " to " + WalletApi.encode58Check(toAddress)
                     + " successful !!!");
             outputStreamWriter.append(amount + " " + WalletApi.encode58Check(toAddress) + "\n");
+            outputStreamWriterTxid.append(number + "\n");
             String txid = ByteArray
                 .toHexString(Sha256Hash.hash(transaction.getRawData().toByteArray()));
             outputStreamWriterTxid
-                .append(txid + " " + WalletApi.encode58Check(toAddress) + " " + amount);
+                .append(txid + " " + WalletApi.encode58Check(toAddress) + " " + amount + "\n");
           } else {
             System.out.println(
                 "Send " + amount + " " + assertId + " to " + WalletApi.encode58Check(toAddress)
@@ -286,9 +311,11 @@ public class Air_drop {
         outputStreamTxid.close();
       }
     }
+    System.out.println("End sendCoin.");
   }
 
   private static void signTransaction(byte[] privateKey) throws IOException {
+    System.out.println("Start signTransaction.");
     File transactionSignedFile = new File("transactionSigned.txt");
     File transactionFile = new File("transaction.txt");
     FileInputStream inputStream = null;
@@ -314,6 +341,7 @@ public class Air_drop {
         transaction1 = TransactionUtils.sign(transaction1, ecKey);
         outputStreamWriter.append(number + "\n");
         outputStreamWriter.append(ByteArray.toHexString(transaction1.toByteArray()) + "\n");
+        System.out.println("signTransaction " + number);
       }
     } catch (IOException e) {
       throw e;
@@ -335,9 +363,11 @@ public class Air_drop {
         outputStream.close();
       }
     }
+    System.out.println("End signTransaction.");
   }
 
   private static void queryTransaction() throws IOException {
+    System.out.println("Start queryTransaction.");
     FileInputStream inputStream = null;
     InputStreamReader inputStreamReader = null;
     BufferedReader bufferedReader = null;
@@ -347,8 +377,9 @@ public class Air_drop {
       inputStreamReader = new InputStreamReader(inputStream);
       bufferedReader = new BufferedReader(inputStreamReader);
 
-      String data;
-      while ((data = bufferedReader.readLine()) != null) {
+      String number;
+      while ((number = bufferedReader.readLine()) != null) {
+        String data = bufferedReader.readLine();
         String[] datas = data.split(" ");
         if (datas.length != 3) {
           continue;
@@ -364,6 +395,9 @@ public class Air_drop {
         }
         if (!searchTransaction(txid)) {
           printLostAddress(address, amount);
+          System.out.println("queryTransaction " + number + " airdrop faild.");
+        } else {
+          System.out.println("queryTransaction " + number + " airdrop successful.");
         }
       }
     } catch (IOException e) {
@@ -379,6 +413,7 @@ public class Air_drop {
         inputStream.close();
       }
     }
+    System.out.println("End queryTransaction.");
   }
 
   public static void main(String[] args) throws IOException {
@@ -388,26 +423,48 @@ public class Air_drop {
       System.out.println(arg);
     }
     if (args[0].equals("airdrop")) {
+      long start = System.currentTimeMillis();
       createTransaction();
+      long start1 = System.currentTimeMillis();
+      System.out.println("Spend time " + (start1 - start));
       signTransaction(privateKey);
+      long start2 = System.currentTimeMillis();
+      System.out.println("Spend time " + (start2 - start1));
       sendCoin();
+      long start3 = System.currentTimeMillis();
+      System.out.println("Spend time " + (start3 - start2));
       queryTransaction();
+      long end = System.currentTimeMillis();
+      System.out.println("Spend time " + (end - start3));
+      System.out.println("Total spend time " + (end - start));
     }
 
     if (args[0].equals("create")) {
+      long start = System.currentTimeMillis();
       createTransaction();
+      long end = System.currentTimeMillis();
+      System.out.println("Spend time " + (end - start));
       return;
     }
     if (args[0].equals("sign")) {
+      long start = System.currentTimeMillis();
       signTransaction(privateKey);
+      long end = System.currentTimeMillis();
+      System.out.println("Spend time " + (end - start));
       return;
     }
     if (args[0].equals("send")) {
+      long start = System.currentTimeMillis();
       sendCoin();
+      long end = System.currentTimeMillis();
+      System.out.println("Spend time " + (end - start));
       return;
     }
     if (args[0].equals("query")) {
+      long start = System.currentTimeMillis();
       queryTransaction();
+      long end = System.currentTimeMillis();
+      System.out.println("Spend time " + (end - start));
       return;
     }
 
