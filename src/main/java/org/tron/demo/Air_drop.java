@@ -8,6 +8,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +49,8 @@ public class Air_drop {
   private static File logs = new File("logs.txt");
   private static File txIdFile = new File("txid.txt");
   private static File lostAddress = new File("lostaddress.txt");
+  private static File blackListFile = new File("blackList.txt");
+  private static List blackList = new ArrayList();
   private static long TRX_MIN;
   private static long TRX_NUM;
   private static long BTT_NUM;
@@ -119,6 +123,37 @@ public class Air_drop {
       privateKey = ByteArray.fromHexString(priKey);
     }
     rpcCli = new GrpcClient(fullNode, solidityNode);
+    initBlackList();
+  }
+
+  private static void initBlackList() throws IOException {
+    FileInputStream inputStream = null;
+    InputStreamReader inputStreamReader = null;
+    BufferedReader bufferedReader = null;
+
+    try {
+      inputStream = new FileInputStream(blackListFile);
+      inputStreamReader = new InputStreamReader(inputStream);
+      bufferedReader = new BufferedReader(inputStreamReader);
+
+      String data;
+      while ((data = bufferedReader.readLine()) != null) {
+        blackList.add(data);
+      }
+    } catch (IOException e) {
+      System.out.println(e.getMessage());
+    } finally {
+      if (bufferedReader != null) {
+        bufferedReader.close();
+      }
+      if (inputStreamReader != null) {
+        inputStreamReader.close();
+      }
+      if (inputStream != null) {
+        inputStream.close();
+      }
+    }
+    System.out.println("End createTransaction.");
   }
 
   private static boolean broadcastTransaction(Transaction transaction) {
@@ -190,6 +225,11 @@ public class Air_drop {
         String[] datas = data.split(",");
         String address = datas[0];
         String amountStr = datas[1];
+
+        if (blackList.contains(address)) {
+          continue;
+        }
+
         try {
           if (null == WalletApi.decodeFromBase58Check(address)) {
             printLostAddress(address, amountStr);
