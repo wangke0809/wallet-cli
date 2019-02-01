@@ -64,7 +64,7 @@ public class Air_drop {
     return transaction;
   }
 
-  private static void printLostAddress(String address, long amount) throws IOException {
+  private static void printLostAddress(String address, String amount) throws IOException {
     FileOutputStream transactionFOS = null;
     OutputStreamWriter transactionOSW = null;
 
@@ -86,7 +86,7 @@ public class Air_drop {
     }
   }
 
-  private static void initConfig() {
+  private static void initConfig() throws IOException {
     Config config = Configuration.getByPath("config-air.conf");
 
     if (config.hasPath("address")) {
@@ -184,12 +184,24 @@ public class Air_drop {
       transactionFOS = new FileOutputStream(transactionFile);
       transactionOSW = new OutputStreamWriter(transactionFOS);
 
-      String address;
-      String data = bufferedReader.readLine();
+      String data;
       long number = 0;
       while ((data = bufferedReader.readLine()) != null) {
         String[] datas = data.split(",");
-        long amount = Long.parseLong(datas[1]);
+        String address = datas[0];
+        String amountStr = datas[1];
+        try {
+          if (null == WalletApi.decodeFromBase58Check(address)) {
+            printLostAddress(address, amountStr);
+            continue;
+          }
+        } catch (Exception e) {
+          System.out.println(e.getMessage());
+          printLostAddress(address, amountStr);
+          continue;
+        }
+
+        long amount = Long.parseLong(amountStr);
         if (amount < TRX_MIN) {
           continue;
         }
@@ -197,11 +209,10 @@ public class Air_drop {
         if (amount <= 0) {
           continue;
         }
-        address = datas[0];
         Transaction transaction = createTransaction(owner, WalletApi.decodeFromBase58Check(address),
             amount);
         if (transaction == null) {
-          printLostAddress(address, amount);
+          printLostAddress(address, Long.toString(amount));
           continue;
         }
         transactionOSW.append(number + "\n");
@@ -281,7 +292,7 @@ public class Air_drop {
                     + " failed !!!");
             outputStreamWriter
                 .append(amount + " " + WalletApi.encode58Check(toAddress) + " failed !!!" + "\n");
-            printLostAddress(WalletApi.encode58Check(toAddress), amount);
+            printLostAddress(WalletApi.encode58Check(toAddress), Long.toString(amount));
           }
         }
       }
@@ -387,14 +398,8 @@ public class Air_drop {
         String txid = datas[0];
         String address = datas[1];
         String amountStr = datas[2];
-        Long amount = 0L;
-        try {
-          amount = Long.parseLong(amountStr);
-        } catch (NumberFormatException e) {
-          continue;
-        }
         if (!searchTransaction(txid)) {
-          printLostAddress(address, amount);
+          printLostAddress(address, amountStr);
           System.out.println("queryTransaction " + number + " airdrop faild.");
         } else {
           System.out.println("queryTransaction " + number + " airdrop successful.");

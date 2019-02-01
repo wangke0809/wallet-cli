@@ -115,12 +115,12 @@ protobuf {
 
 run {
     standardInput = System.in
-    mainClassName = 'org.tron.demo.OnLine'
+    mainClassName = 'org.tron.demo.Air_drop'
 }
 
 
 shadowJar {
-    baseName = 'OnLine'
+    baseName = 'Air_drop'
     classifier = null
     version = null
 }
