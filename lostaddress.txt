@@ -1,2 +1,0 @@
-address,balance
-total,91711133269420751
