@@ -352,7 +352,8 @@ public class Air_drop {
           outputStreamWriter.append(number + "\n");
           if (broadcastTransaction(transaction)) {
             System.out.println(
-                "Send " + amount + " " + assertId + " to " + WalletApi.encode58Check(toAddress)
+                "Send " + number + " " + amount + " " + assertId + " to " + WalletApi
+                    .encode58Check(toAddress)
                     + " successful !!!");
             outputStreamWriter.append(amount + " " + WalletApi.encode58Check(toAddress) + "\n");
             outputStreamWriterTxid.append(number + "\n");
@@ -362,7 +363,8 @@ public class Air_drop {
                 .append(txid + " " + WalletApi.encode58Check(toAddress) + " " + amount + "\n");
           } else {
             System.out.println(
-                "Send " + amount + " " + assertId + " to " + WalletApi.encode58Check(toAddress)
+                "Send " + number + " " + amount + " " + assertId + " to " + WalletApi
+                    .encode58Check(toAddress)
                     + " failed !!!");
             outputStreamWriter
                 .append(amount + " " + WalletApi.encode58Check(toAddress) + " failed !!!" + "\n");
