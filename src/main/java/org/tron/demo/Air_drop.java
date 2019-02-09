@@ -91,7 +91,7 @@ public class Air_drop {
     }
   }
 
-  private static void printLostTransaction(String transaction) throws IOException {
+  private static void printLostTransaction(String number, String transaction) throws IOException {
     FileOutputStream transactionFOS = null;
     OutputStreamWriter transactionOSW = null;
 
@@ -99,6 +99,7 @@ public class Air_drop {
       transactionFOS = new FileOutputStream(lostTransaction, true);
       transactionOSW = new OutputStreamWriter(transactionFOS);
 
+      transactionOSW.append(number + "\n");
       transactionOSW.append(transaction + "\n");
     } catch (IOException e) {
       throw e;
@@ -356,7 +357,7 @@ public class Air_drop {
             outputStreamWriter
                 .append(amount + " " + WalletApi.encode58Check(toAddress) + " failed !!!" + "\n");
             printLostAddress(WalletApi.encode58Check(toAddress), Long.toString(amount));
-            printLostTransaction(transactionSigned);
+            printLostTransaction(number, transactionSigned);
           }
         }
       }
