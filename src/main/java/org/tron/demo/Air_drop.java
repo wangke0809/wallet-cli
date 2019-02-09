@@ -1,6 +1,7 @@
 package org.tron.demo;
 
 import com.typesafe.config.Config;
+import io.grpc.StatusRuntimeException;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -195,17 +196,26 @@ public class Air_drop {
   }
 
   private static boolean searchTransaction(String txid) {
-    Optional<Transaction> result = WalletApi.getTransactionById(txid);
-    if (!result.isPresent()) {
-      return false;
-    }
+    for (int i = 0; i < 10; i++) {
+      try {
+        Optional<Transaction> result = WalletApi.getTransactionById(txid);
+        if (!result.isPresent()) {
+          return false;
+        }
 
-    Transaction transaction = result.get();
-    if (transaction == null) {
-      return false;
-    }
+        Transaction transaction = result.get();
+        if (transaction == null) {
+          return false;
+        }
 
-    return true;
+        return true;
+      } catch (StatusRuntimeException exception) {
+        System.out.println(exception.getMessage());
+        continue;
+      }
+    }
+    return false;
+
   }
 
   private static Transaction createTransaction(byte[] owner, byte[] toAddress, long amount) {
