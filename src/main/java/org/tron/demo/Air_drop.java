@@ -49,6 +49,7 @@ public class Air_drop {
   private static File logs = new File("logs.txt");
   private static File txIdFile = new File("txid.txt");
   private static File lostAddress = new File("lostaddress.txt");
+  private static File lostTransaction = new File("losttransaction.txt");
   private static File blackListFile = new File("blackList.txt");
   private static List blackList = new ArrayList();
   private static long TRX_MIN;
@@ -77,6 +78,28 @@ public class Air_drop {
       transactionOSW = new OutputStreamWriter(transactionFOS);
 
       transactionOSW.append(address + "," + amount + "\n");
+    } catch (IOException e) {
+      throw e;
+    } finally {
+
+      if (transactionOSW != null) {
+        transactionOSW.close();
+      }
+      if (transactionFOS != null) {
+        transactionFOS.close();
+      }
+    }
+  }
+
+  private static void printLostTransaction(String transaction) throws IOException {
+    FileOutputStream transactionFOS = null;
+    OutputStreamWriter transactionOSW = null;
+
+    try {
+      transactionFOS = new FileOutputStream(lostTransaction, true);
+      transactionOSW = new OutputStreamWriter(transactionFOS);
+
+      transactionOSW.append(transaction + "\n");
     } catch (IOException e) {
       throw e;
     } finally {
@@ -245,7 +268,7 @@ public class Air_drop {
         if (amount < TRX_MIN) {
           continue;
         }
-        amount = amount * BTT_NUM / TRX_NUM;
+        amount = (long) (amount * 1.0 * BTT_NUM / TRX_NUM);
         if (amount <= 0) {
           continue;
         }
@@ -333,6 +356,7 @@ public class Air_drop {
             outputStreamWriter
                 .append(amount + " " + WalletApi.encode58Check(toAddress) + " failed !!!" + "\n");
             printLostAddress(WalletApi.encode58Check(toAddress), Long.toString(amount));
+            printLostTransaction(transactionSigned);
           }
         }
       }
