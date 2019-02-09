@@ -269,7 +269,7 @@ public class Air_drop {
         if (amount < TRX_MIN) {
           continue;
         }
-        amount = (long)(amount * 1.0 * BTT_NUM / TRX_NUM);
+        amount = (long) (amount * 1.0 * BTT_NUM / TRX_NUM);
         if (amount <= 0) {
           continue;
         }
@@ -465,6 +465,7 @@ public class Air_drop {
         String amountStr = datas[2];
         if (!searchTransaction(txid)) {
           printLostAddress(address, amountStr);
+          printLostTransaction(number, txid);
           System.out.println("queryTransaction " + number + " airdrop faild.");
         } else {
           System.out.println("queryTransaction " + number + " airdrop successful.");
