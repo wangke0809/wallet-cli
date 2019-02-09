@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ import org.tron.common.crypto.ECKey;
 import org.tron.common.crypto.Sha256Hash;
 import org.tron.common.utils.ByteArray;
 import org.tron.common.utils.TransactionUtils;
+import org.tron.common.utils.Utils;
 import org.tron.core.config.Configuration;
 import org.tron.protos.Contract;
 import org.tron.protos.Contract.TransferAssetContract;
@@ -56,6 +58,7 @@ public class Air_drop {
   private static long TRX_MIN;
   private static long TRX_NUM;
   private static long BTT_NUM;
+  private static String timestamp = null;
   private static GrpcClient rpcCli = null;
 
   private static Transaction createTransaction(Contract.TransferAssetContract contract) {
@@ -64,8 +67,18 @@ public class Air_drop {
       return null;
     }
     Transaction transaction = extention.getTransaction();
-    Transaction.raw rawData = transaction.getRawData().toBuilder()
-        .setExpiration(System.currentTimeMillis() + 6 * 60 * 60 * 1000L).build(); //6h
+    long time_stamp;
+    if (timestamp != null) {
+      Date date = Utils.strToDateLong(timestamp);
+      time_stamp = date.getTime();
+    } else {
+      time_stamp = System.currentTimeMillis();
+    }
+    Transaction.raw rawData = transaction.getRawData()
+        .toBuilder()
+        .setTimestamp(time_stamp)
+        .setExpiration(time_stamp + 24 * 60 * 60 * 1000L)
+        .build(); //24h
     transaction = transaction.toBuilder().setRawData(rawData).build();
     return transaction;
   }
@@ -147,6 +160,9 @@ public class Air_drop {
       String priKey = config.getString("privateKey");
       privateKey = ByteArray.fromHexString(priKey);
     }
+    if (config.hasPath("timestamp")) {
+      timestamp = config.getString("timestamp");
+    }
     rpcCli = new GrpcClient(fullNode, solidityNode);
     initBlackList();
   }
@@ -178,7 +194,6 @@ public class Air_drop {
         inputStream.close();
       }
     }
-    System.out.println("End createTransaction.");
   }
 
   private static boolean broadcastTransaction(Transaction transaction) {
