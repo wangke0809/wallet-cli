@@ -58,6 +58,8 @@ public class Air_drop {
   private static long TRX_MIN;
   private static long TRX_NUM;
   private static long BTT_NUM;
+  private static int SEND_START_LINE = 0;
+  private static int SEND_LINE_NUMS = 0;
   private static String timestamp = null;
   private static GrpcClient rpcCli = null;
 
@@ -163,6 +165,13 @@ public class Air_drop {
     if (config.hasPath("timestamp")) {
       timestamp = config.getString("timestamp");
     }
+    if (config.hasPath("SEND_START_LINE")) {
+      SEND_START_LINE = config.getInt("SEND_START_LINE");
+    }
+    if (config.hasPath("SEND_LINE_NUMS")) {
+      SEND_LINE_NUMS = config.getInt("SEND_LINE_NUMS");
+    }
+
     rpcCli = new GrpcClient(fullNode, solidityNode);
     initBlackList();
   }
@@ -354,6 +363,25 @@ public class Air_drop {
 
       String transactionSigned;
       String number;
+
+      if (SEND_START_LINE != 0) {
+        for (int i = 0; i < SEND_START_LINE; i++) {
+          //SKIP
+          number = bufferedReader.readLine();
+          if (number == null) {
+            break;
+          }
+          transactionSigned = bufferedReader.readLine();
+          if (transactionSigned == null) {
+            break;
+          }
+        }
+      }
+
+      int send_numbers = 0;
+      if (SEND_LINE_NUMS == 0) {
+        SEND_LINE_NUMS = Integer.MAX_VALUE;
+      }
       while ((number = bufferedReader.readLine()) != null) {
         transactionSigned = bufferedReader.readLine();
         Transaction transaction = Transaction.parseFrom(ByteArray.fromHexString(transactionSigned));
@@ -386,6 +414,10 @@ public class Air_drop {
             printLostAddress(WalletApi.encode58Check(toAddress), Long.toString(amount));
             printLostTransaction(number, transactionSigned);
           }
+        }
+        send_numbers++;
+        if (send_numbers >= SEND_LINE_NUMS) {
+          break;
         }
       }
     } catch (IOException e) {

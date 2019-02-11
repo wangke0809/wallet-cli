@@ -11,6 +11,8 @@
     TRX_MIN             至少拥有TRX数量(sun)才参与空投
     TRX_NUM、BTT_NUM	    拥有TRX_NUM sun 可以获得 BTT_NUM 最小单位个 BTT
     timestamp           交易的统一时间戳，超时时间在此基础上+24小时，注意设置本时区当前时间
+    SEND_START_LINE     广播起始交易条数
+    SEND_LINE_NUMS      广播交易条数，用于多个进程同时广播
 
 3、jar包和配置文件在线、离线各1份，在线的配置文件不提供私钥
 
