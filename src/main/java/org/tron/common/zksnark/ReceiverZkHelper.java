@@ -13,9 +13,9 @@ import org.tron.api.GrpcAPI.BlockList;
 import org.tron.common.crypto.Sha256Hash;
 import org.tron.common.utils.ByteArray;
 import org.tron.common.zksnark.merkle.IncrementalMerkleTreeContainer;
-import org.tron.common.zksnark.merkle.IncrementalMerkleWitnessContainer;
+import org.tron.common.zksnark.merkle.IncrementalMerkleVoucherContainer;
 import org.tron.core.capsule.IncrementalMerkleTreeCapsule;
-import org.tron.core.capsule.IncrementalMerkleWitnessCapsule;
+import org.tron.core.capsule.IncrementalMerkleVoucherCapsule;
 import org.tron.core.capsule.SHA256CompressCapsule;
 import org.tron.core.db.Manager;
 import org.tron.core.exception.ItemNotFoundException;
@@ -187,13 +187,13 @@ public class ReceiverZkHelper {
           SHA256Compress cm2 = cmCapsule2.getInstance();
 
           //todo :Witness write can be optimized
-          Iterator<Entry<byte[], IncrementalMerkleWitnessCapsule>> iterator = dbManager
+          Iterator<Entry<byte[], IncrementalMerkleVoucherCapsule>> iterator = dbManager
               .getMerkleWitnessStore().iterator();
           System.out.println("merkleWitnessStore:" + dbManager.getMerkleWitnessStore().size());
           while (iterator.hasNext()) {
-            Entry<byte[], IncrementalMerkleWitnessCapsule> entry = iterator.next();
-            IncrementalMerkleWitnessContainer container = entry.getValue()
-                .toMerkleWitnessContainer();
+            Entry<byte[], IncrementalMerkleVoucherCapsule> entry = iterator.next();
+            IncrementalMerkleVoucherContainer container = entry.getValue()
+                .toMerkleVoucherContainer();
             System.out.println("witness before:" + container.getWitnessCapsule().size());
             container.getWitnessCapsule().printSize();
             container.append(cm1);
@@ -210,14 +210,14 @@ public class ReceiverZkHelper {
             System.out.println("foundTx");
             found = true;
             tree.append(cm1);
-            IncrementalMerkleWitnessContainer witness1 = tree.getTreeCapsule().deepCopy()
+            IncrementalMerkleVoucherContainer witness1 = tree.getTreeCapsule().deepCopy()
                 .toMerkleTreeContainer().toWitness();
             witness1.getWitnessCapsule().setOutputPoint(contractId, 0);
 
             witness1.append(cm2);
             tree.append(cm2);
 
-            IncrementalMerkleWitnessContainer witness2 = tree.getTreeCapsule().deepCopy()
+            IncrementalMerkleVoucherContainer witness2 = tree.getTreeCapsule().deepCopy()
                 .toMerkleTreeContainer().toWitness();
             witness2.getWitnessCapsule().setOutputPoint(contractId, 1);
             System.out.println("witness1 size after:" + witness1.getWitnessCapsule().size());
@@ -329,7 +329,7 @@ public class ReceiverZkHelper {
 
     System.out.println("treeSize:" + tree.size());
 
-    List<IncrementalMerkleWitnessContainer> newWitness = new ArrayList<>();
+    List<IncrementalMerkleVoucherContainer> newWitness = new ArrayList<>();
 
     boolean found = false;
 
@@ -367,14 +367,14 @@ public class ReceiverZkHelper {
           found = true;
 
           tree.append(cm1);
-          IncrementalMerkleWitnessContainer witness1 = tree.getTreeCapsule().deepCopy()
+          IncrementalMerkleVoucherContainer witness1 = tree.getTreeCapsule().deepCopy()
               .toMerkleTreeContainer().toWitness();
           witness1.getWitnessCapsule().setOutputPoint(contractId, 0);
 
           witness1.append(cm2);
           tree.append(cm2);
 
-          IncrementalMerkleWitnessContainer witness2 = tree.getTreeCapsule().deepCopy()
+          IncrementalMerkleVoucherContainer witness2 = tree.getTreeCapsule().deepCopy()
               .toMerkleTreeContainer().toWitness();
           witness2.getWitnessCapsule().setOutputPoint(contractId, 1);
 

@@ -85,9 +85,8 @@ import org.tron.protos.Contract.BuyStorageBytesContract;
 import org.tron.protos.Contract.BuyStorageContract;
 import org.tron.protos.Contract.CreateSmartContract;
 import org.tron.protos.Contract.FreezeBalanceContract;
-import org.tron.protos.Contract.IncrementalMerkleWitness;
-import org.tron.protos.Contract.IncrementalMerkleWitnessInfo;
-import org.tron.protos.Contract.MerklePath;
+import org.tron.protos.Contract.IncrementalMerkleVoucher;
+import org.tron.protos.Contract.IncrementalMerkleVoucherInfo;
 import org.tron.protos.Contract.OutputPoint;
 import org.tron.protos.Contract.OutputPointInfo;
 import org.tron.protos.Contract.SellStorageContract;
@@ -726,26 +725,26 @@ public class WalletApi {
         outputPointInfo.setOutPoint2(outputPoint2);
       }
       outputPointInfo.setBlockNum(synBlockNum);
-      Optional<IncrementalMerkleWitnessInfo> ret = rpcCli
-          .getMerkleTreeWitnessInfo(outputPointInfo.build());
+      Optional<IncrementalMerkleVoucherInfo> ret = rpcCli
+          .getMerkleTreeVoucherInfo(outputPointInfo.build());
 
-      if (!ret.isPresent() || !ret.get().hasWitness1() || (!StringUtils.isEmpty(cm2) && !ret.get().hasWitness2())) {
+      if (!ret.isPresent() || !ret.get().hasVoucher1() || (!StringUtils.isEmpty(cm2) && !ret.get().hasVoucher2())) {
         System.out.println("Can not get merkle witness!");
         return false;
       }
-      IncrementalMerkleWitness witnessMsg1 = ret.get().getWitness1();
+      IncrementalMerkleVoucher witnessMsg1 = ret.get().getVoucher1();
       rt = witnessMsg1.getRt();
       builder.addInputs(ZksnarkUtils
           .CmTuple2JSInputMsg(c_old1,
-              ZksnarkUtils.MerkleWitness2IncrementalWitness(witnessMsg1)));
-      if (ret.get().hasWitness2()) {
-        IncrementalMerkleWitness witnessMsg2 = ret.get().getWitness2();
+              ZksnarkUtils.MerkleVoucher2IncrementalVoucher(witnessMsg1)));
+      if (ret.get().hasVoucher2()) {
+        IncrementalMerkleVoucher witnessMsg2 = ret.get().getVoucher2();
         if (!rt.equals(witnessMsg2.getRt())) {
           System.out.println("Rt is not same between " + cm1 + " and " + cm2);
           return false;
         }
         builder.addInputs(ZksnarkUtils.CmTuple2JSInputMsg(c_old2,
-            ZksnarkUtils.MerkleWitness2IncrementalWitness(witnessMsg2)));
+            ZksnarkUtils.MerkleVoucher2IncrementalVoucher(witnessMsg2)));
       }
     }
 
@@ -1634,13 +1633,13 @@ public class WalletApi {
     return rpcCli.getBestMerkleRoot();
   }
 
-  public static Optional<IncrementalMerkleWitness> getMerkleTreeWitness(String hash, int index) {
-    return rpcCli.getMerkleTreeWitness(hash, index);
+  public static Optional<IncrementalMerkleVoucher> getMerkleTreeVoucher(String hash, int index) {
+    return rpcCli.getMerkleTreeVoucher(hash, index);
   }
 
-  public static Optional<IncrementalMerkleWitnessInfo> getMerkleTreeWitnessInfo(String hash1,
+  public static Optional<IncrementalMerkleVoucherInfo> getMerkleTreeVoucherInfo(String hash1,
       int index1, String hash2, int index2, int synBlockNum) {
-    return rpcCli.getMerkleTreeWitnessInfo(hash1, index1, hash2, index2, synBlockNum);
+    return rpcCli.getMerkleTreeVoucherInfo(hash1, index1, hash2, index2, synBlockNum);
   }
 
   public static Optional<ShieldAddress> generateShieldAddress() {

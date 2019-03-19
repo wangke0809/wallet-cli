@@ -4,22 +4,22 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import org.tron.common.utils.ByteArray;
 import org.tron.core.capsule.IncrementalMerkleTreeCapsule;
-import org.tron.core.capsule.IncrementalMerkleWitnessCapsule;
+import org.tron.core.capsule.IncrementalMerkleVoucherCapsule;
 import org.tron.protos.Contract.OutputPoint;
 import org.tron.protos.Contract.SHA256Compress;
 
-public class IncrementalMerkleWitnessContainer {
+public class IncrementalMerkleVoucherContainer {
 
   public static Integer DEPTH = IncrementalMerkleTreeContainer.DEPTH;
 
-  private IncrementalMerkleWitnessCapsule witnessCapsule;
+  private IncrementalMerkleVoucherCapsule witnessCapsule;
 
-  public IncrementalMerkleWitnessContainer(IncrementalMerkleWitnessCapsule witnessCapsule) {
+  public IncrementalMerkleVoucherContainer(IncrementalMerkleVoucherCapsule witnessCapsule) {
     this.witnessCapsule = witnessCapsule;
   }
 
-  public IncrementalMerkleWitnessContainer(IncrementalMerkleTreeContainer tree) {
-    this.witnessCapsule = new IncrementalMerkleWitnessCapsule();
+  public IncrementalMerkleVoucherContainer(IncrementalMerkleTreeContainer tree) {
+    this.witnessCapsule = new IncrementalMerkleVoucherCapsule();
     this.witnessCapsule.setTree(tree.getTreeCapsule());
   }
 
@@ -72,7 +72,7 @@ public class IncrementalMerkleWitnessContainer {
     }
   }
 
-  public IncrementalMerkleWitnessCapsule getWitnessCapsule() {
+  public IncrementalMerkleVoucherCapsule getWitnessCapsule() {
     return witnessCapsule;
   }
 

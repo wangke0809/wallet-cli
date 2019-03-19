@@ -629,10 +629,10 @@ service Wallet {
   rpc GetNullifier (BytesMessage) returns (BytesMessage) {
   }
 
-  rpc GetMerkleTreeWitness (OutputPoint) returns (IncrementalMerkleWitness) {
+  rpc GetMerkleTreeVoucher (OutputPoint) returns (IncrementalMerkleVoucher) {
   }
 
-  rpc GetMerkleTreeWitnessInfo (OutputPointInfo) returns (IncrementalMerkleWitnessInfo) {
+  rpc GetMerkleTreeVoucherInfo (OutputPointInfo) returns (IncrementalMerkleVoucherInfo) {
     }
 
   rpc GenerateShieldAddress (EmptyMessage) returns (ShieldAddress) {

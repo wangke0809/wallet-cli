@@ -46,9 +46,8 @@ import org.tron.api.ZkGrpcAPI.ProofInputMsg;
 import org.tron.api.ZkGrpcAPI.ProofOutputMsg;
 import org.tron.common.utils.ByteArray;
 import org.tron.protos.Contract;
-import org.tron.protos.Contract.IncrementalMerkleWitness;
-import org.tron.protos.Contract.IncrementalMerkleWitnessInfo;
-import org.tron.protos.Contract.MerklePath;
+import org.tron.protos.Contract.IncrementalMerkleVoucher;
+import org.tron.protos.Contract.IncrementalMerkleVoucherInfo;
 import org.tron.protos.Contract.OutputPoint;
 import org.tron.protos.Contract.OutputPointInfo;
 import org.tron.protos.Contract.ShieldAddress;
@@ -795,21 +794,21 @@ public class GrpcClient {
     return Optional.ofNullable(rt);
   }
 
-  public Optional<IncrementalMerkleWitness> getMerkleTreeWitness(String hash, int index) {
+  public Optional<IncrementalMerkleVoucher> getMerkleTreeVoucher(String hash, int index) {
     ByteString bsTxHash = ByteString.copyFrom(ByteArray.fromHexString(hash));
     OutputPoint request = OutputPoint.newBuilder().setHash(bsTxHash).setIndex(index).build();
 
-    IncrementalMerkleWitness witness = blockingStubFull
-        .getMerkleTreeWitness(request);
-    return Optional.ofNullable(witness);
+    IncrementalMerkleVoucher voucher = blockingStubFull
+        .getMerkleTreeVoucher(request);
+    return Optional.ofNullable(voucher);
   }
 
-  public Optional<IncrementalMerkleWitnessInfo> getMerkleTreeWitnessInfo(OutputPointInfo request) {
-    IncrementalMerkleWitnessInfo witness = blockingStubFull.getMerkleTreeWitnessInfo(request);
-    return Optional.ofNullable(witness);
+  public Optional<IncrementalMerkleVoucherInfo> getMerkleTreeVoucherInfo(OutputPointInfo request) {
+    IncrementalMerkleVoucherInfo voucher = blockingStubFull.getMerkleTreeVoucherInfo(request);
+    return Optional.ofNullable(voucher);
   }
 
-  public Optional<IncrementalMerkleWitnessInfo> getMerkleTreeWitnessInfo(String hash1, int index1,
+  public Optional<IncrementalMerkleVoucherInfo> getMerkleTreeVoucherInfo(String hash1, int index1,
       String hash2, int index2, int synBlockNum) {
 
     ByteString bsTxHash = ByteString.copyFrom(ByteArray.fromHexString(hash1));
@@ -820,9 +819,9 @@ public class GrpcClient {
         setOutPoint2(outputPoint2).setBlockNum(synBlockNum).
         build();
 
-    IncrementalMerkleWitnessInfo witness = blockingStubFull
-        .getMerkleTreeWitnessInfo(request);
-    return Optional.ofNullable(witness);
+    IncrementalMerkleVoucherInfo voucher = blockingStubFull
+        .getMerkleTreeVoucherInfo(request);
+    return Optional.ofNullable(voucher);
   }
 
   public Optional<ShieldAddress> generateShieldAddress() {

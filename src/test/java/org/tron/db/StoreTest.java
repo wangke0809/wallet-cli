@@ -17,7 +17,7 @@ import org.tron.common.utils.ByteArray;
 import org.tron.common.utils.FileUtil;
 import org.tron.common.zksnark.ReceiverZkHelper;
 import org.tron.common.zksnark.merkle.IncrementalMerkleTreeContainer;
-import org.tron.common.zksnark.merkle.IncrementalMerkleWitnessContainer;
+import org.tron.common.zksnark.merkle.IncrementalMerkleVoucherContainer;
 import org.tron.core.capsule.SHA256CompressCapsule;
 import org.tron.core.config.DefaultConfig;
 import org.tron.core.db.Manager;
@@ -30,7 +30,6 @@ import org.tron.protos.Protocol.DynamicProperties;
 import org.tron.protos.Protocol.Transaction;
 import org.tron.protos.Protocol.Transaction.Contract.ContractType;
 import org.tron.protos.Protocol.TransactionInfo;
-import org.tron.walletserver.WalletApi;
 
 public class StoreTest {
 
@@ -107,7 +106,7 @@ public class StoreTest {
     SHA256Compress a = compressCapsule1.getInstance();
 
     tree.append(a);
-    IncrementalMerkleWitnessContainer witness1 = tree.toWitness();
+    IncrementalMerkleVoucherContainer witness1 = tree.toWitness();
     byte[] key = {0x01};
     dbManager.getMerkleWitnessStore().put(key, witness1.getWitnessCapsule());
 

@@ -27,7 +27,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.tron.api.GrpcAPI.BytesMessage;
 import org.tron.api.ZkGrpcAPI.IncrementalMerkleTreeMsg;
-import org.tron.api.ZkGrpcAPI.IncrementalWitnessMsg;
+import org.tron.api.ZkGrpcAPI.IncrementalVoucherMsg;
 import org.tron.api.ZkGrpcAPI.JSInputMsg;
 import org.tron.api.ZkGrpcAPI.JSOutputMsg;
 import org.tron.api.ZkGrpcAPI.SproutNoteMsg;
@@ -49,7 +49,7 @@ import org.tron.core.exception.CipherException;
 import org.tron.protos.Contract.BN128G1;
 import org.tron.protos.Contract.BN128G2;
 import org.tron.protos.Contract.IncrementalMerkleTree;
-import org.tron.protos.Contract.IncrementalMerkleWitness;
+import org.tron.protos.Contract.IncrementalMerkleVoucher;
 import org.tron.protos.Contract.SHA256Compress;
 import org.tron.protos.Contract.ZksnarkV0TransferContract;
 import org.tron.protos.Contract.zkv0proof;
@@ -109,7 +109,7 @@ public class ZksnarkUtils {
     return output.build();
   }
 
-  public static JSInputMsg CmTuple2JSInputMsg(CmTuple in, IncrementalWitnessMsg witnessMsg) {
+  public static JSInputMsg CmTuple2JSInputMsg(CmTuple in, IncrementalVoucherMsg voucherMsg) {
     JSInputMsg.Builder input = JSInputMsg.newBuilder();
     SproutNoteMsg.Builder note = SproutNoteMsg.newBuilder();
     byte[] ask;
@@ -127,14 +127,14 @@ public class ZksnarkUtils {
       new Random().nextBytes(rho);
       r = new byte[32];
       new Random().nextBytes(r);
-//      input.setWitness(witnessMsg);
+//      input.setVoucher(voucherMsg);
     } else {
       ask = Arrays.copyOfRange(in.getAddr_sk(), 0, 32);
       apk = Arrays.copyOfRange(in.getAddr_pk(), 0, 32);
       v = ByteArray.toLong(in.getV());
       rho = in.getRho();
       r = in.getR();
-      input.setWitness(witnessMsg);
+      input.setVoucher(voucherMsg);
     }
     note.setValue(v);
     note.setAPk(Uint256Msg.newBuilder().setHash(ByteString.copyFrom(apk)));
@@ -162,16 +162,16 @@ public class ZksnarkUtils {
     return builder.build();
   }
 
-  public static IncrementalWitnessMsg MerkleWitness2IncrementalWitness(
-      IncrementalMerkleWitness witnessMsg) {
-    IncrementalWitnessMsg.Builder builder = IncrementalWitnessMsg.newBuilder();
-    builder.setTree(transferTree(witnessMsg.getTree()));
-    for (int i = 0; i < witnessMsg.getFilledCount(); i++) {
-      SHA256Compress f = witnessMsg.getFilled(i);
+  public static IncrementalVoucherMsg MerkleVoucher2IncrementalVoucher(
+      IncrementalMerkleVoucher voucherMsg) {
+    IncrementalVoucherMsg.Builder builder = IncrementalVoucherMsg.newBuilder();
+    builder.setTree(transferTree(voucherMsg.getTree()));
+    for (int i = 0; i < voucherMsg.getFilledCount(); i++) {
+      SHA256Compress f = voucherMsg.getFilled(i);
       builder.addFilled(SHA256Compress2Uint256Msg(f));
     }
-    builder.setCursor(transferTree(witnessMsg.getCursor()));
-    builder.setCursorDepth((int) witnessMsg.getCursorDepth());
+    builder.setCursor(transferTree(voucherMsg.getCursor()));
+    builder.setCursorDepth((int) voucherMsg.getCursorDepth());
     return builder.build();
   }
 

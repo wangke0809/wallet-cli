@@ -21,7 +21,7 @@ message IncrementalMerkleTreeMsg {
   repeated Uint256Msg    parents = 3;
 }
 
-message IncrementalWitnessMsg {
+message IncrementalVoucherMsg {
   IncrementalMerkleTreeMsg    tree = 1;
   repeated Uint256Msg         filled = 2;
   IncrementalMerkleTreeMsg    cursor = 3;
@@ -37,7 +37,7 @@ message SproutNoteMsg {
 }
 
 message JSInputMsg {
-  IncrementalWitnessMsg   witness = 1;
+  IncrementalVoucherMsg   voucher = 1;
   SproutNoteMsg           note = 2;
   Uint256Msg              key = 3;
 }

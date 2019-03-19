@@ -4,13 +4,11 @@ import com.google.protobuf.ByteString;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.tron.common.utils.ByteArray;
 import org.tron.core.capsule.IncrementalMerkleTreeCapsule;
-import org.tron.core.capsule.IncrementalMerkleWitnessCapsule;
+import org.tron.core.capsule.IncrementalMerkleVoucherCapsule;
 import org.tron.core.db.Manager;
-import org.tron.protos.Contract.SHA256Compress;
 import org.tron.core.capsule.SHA256CompressCapsule;
-import org.tron.common.zksnark.merkle.IncrementalMerkleWitnessContainer.OutputPointUtil;
+import org.tron.common.zksnark.merkle.IncrementalMerkleVoucherContainer.OutputPointUtil;
 
 @Slf4j
 public class MerkleContainer {
@@ -87,14 +85,14 @@ public class MerkleContainer {
 
     tree = saveCmIntoMerkleTree(tree, cm1);
 
-    IncrementalMerkleWitnessContainer witnessContainer1 =
+    IncrementalMerkleVoucherContainer witnessContainer1 =
         tree.getTreeCapsule().deepCopy().toMerkleTreeContainer().toWitness();
 
     tree = saveCmIntoMerkleTree(tree, cm2);
 
     witnessContainer1 = saveCmIntoMerkleWitness(witnessContainer1, cm2);
 
-    IncrementalMerkleWitnessContainer witnessContainer2 = tree.toWitness();
+    IncrementalMerkleVoucherContainer witnessContainer2 = tree.toWitness();
 
     witnessContainer1.getWitnessCapsule().setOutputPoint(ByteString.copyFrom(hash), 0);
     putMerkleWitnessIntoStore(
@@ -107,8 +105,8 @@ public class MerkleContainer {
     return tree;
   }
 
-  public IncrementalMerkleWitnessContainer saveCmIntoMerkleWitness(
-      IncrementalMerkleWitnessContainer tree, byte[] cm) {
+  public IncrementalMerkleVoucherContainer saveCmIntoMerkleWitness(
+      IncrementalMerkleVoucherContainer tree, byte[] cm) {
     SHA256CompressCapsule sha256CompressCapsule1 = new SHA256CompressCapsule();
     sha256CompressCapsule1.setContent(ByteString.copyFrom(cm));
     tree.append(sha256CompressCapsule1.getInstance());
@@ -120,7 +118,7 @@ public class MerkleContainer {
     this.manager.getMerkleTreeStore().put(key, capsule);
   }
 
-  public void putMerkleWitnessIntoStore(byte[] key, IncrementalMerkleWitnessCapsule capsule) {
+  public void putMerkleWitnessIntoStore(byte[] key, IncrementalMerkleVoucherCapsule capsule) {
     this.manager.getMerkleWitnessStore().put(key, capsule);
   }
 
@@ -130,7 +128,7 @@ public class MerkleContainer {
     return tree.path();
   }
 
-  public IncrementalMerkleWitnessCapsule getWitness(byte[] hash, int index) {
+  public IncrementalMerkleVoucherCapsule getWitness(byte[] hash, int index) {
     return this.manager.getMerkleWitnessStore().get(OutputPointUtil.outputPointToKey(hash, index));
   }
 }

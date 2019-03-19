@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.tron.common.utils.ByteArray;
 import org.tron.core.capsule.IncrementalMerkleTreeCapsule;
 import org.tron.protos.Contract.SHA256Compress;
 import org.tron.core.capsule.SHA256CompressCapsule;
@@ -303,8 +302,8 @@ public class IncrementalMerkleTreeContainer {
     return root().getContent().toByteArray();
   }
 
-  public IncrementalMerkleWitnessContainer toWitness() {
-    return new IncrementalMerkleWitnessContainer(this);
+  public IncrementalMerkleVoucherContainer toWitness() {
+    return new IncrementalMerkleVoucherContainer(this);
   }
 
   public static SHA256Compress empty_root() {

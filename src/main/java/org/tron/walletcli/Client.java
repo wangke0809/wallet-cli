@@ -57,7 +57,7 @@ import org.tron.core.exception.EncodingException;
 import org.tron.core.exception.ItemNotFoundException;
 import org.tron.keystore.StringUtils;
 import org.tron.protos.Contract.AssetIssueContract;
-import org.tron.protos.Contract.IncrementalMerkleWitness;
+import org.tron.protos.Contract.IncrementalMerkleVoucher;
 import org.tron.protos.Contract.ShieldAddress;
 import org.tron.protos.Contract.ZksnarkV0TransferContract;
 import org.tron.protos.Protocol.Account;
@@ -1533,24 +1533,24 @@ public class Client {
     }
   }
 
-  private void getMerkleTreeWitness(String[] parameters) {
+  private void getMerkleTreeVoucher(String[] parameters) {
     String hash = "";
     int index = 0;
     if (parameters == null || parameters.length != 2) {
       System.out
-          .println("getMerkleTreeWitness needs 2 parameters, hash and index");
+          .println("getMerkleTreeVoucher needs 2 parameters, hash and index");
       return;
     } else {
       hash = parameters[0];
       index = Integer.parseInt(parameters[1]);
     }
 
-    Optional<IncrementalMerkleWitness> result = WalletApi.getMerkleTreeWitness(hash, index);
+    Optional<IncrementalMerkleVoucher> result = WalletApi.getMerkleTreeVoucher(hash, index);
     if (result.isPresent()) {
-      IncrementalMerkleWitness witness = result.get();
-      logger.info(witness.toString());
+      IncrementalMerkleVoucher voucher = result.get();
+      logger.info(voucher.toString());
     } else {
-      logger.info("getMerkleTreeWitness " + " failed !!");
+      logger.info("getMerkleTreeVoucher " + " failed !!");
     }
   }
 
@@ -1893,7 +1893,7 @@ public class Client {
     System.out.println("GetDelegatedResourceAccountIndex");
     System.out.println("GetExchange");
     System.out.println("GetBestMerkleRoot");
-    System.out.println("GetMerkleTreeWitness");
+    System.out.println("GetMerkleTreeVoucher");
     System.out.println("GetNextMaintenanceTime");
     System.out.println("GetNullifier");
     System.out.println("GetProposal");
@@ -2342,8 +2342,8 @@ public class Client {
             getBestMerkleRoot();
             break;
           }
-          case "getmerkletreewitness": {
-            getMerkleTreeWitness(parameters);
+          case "getmerkletreevoucher": {
+            getMerkleTreeVoucher(parameters);
             break;
           }
           case "updatesetting": {

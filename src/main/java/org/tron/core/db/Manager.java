@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.tron.core.db.impl.DynamicPropertiesStore;
 import org.tron.core.db.impl.IncrementalMerkleTreeStore;
-import org.tron.core.db.impl.IncrementalMerkleWitnessStore;
+import org.tron.core.db.impl.IncrementalMerkleVoucherStore;
 import org.tron.core.db.impl.TreeBlockIndexStore;
 import org.tron.common.zksnark.merkle.MerkleContainer;
 
@@ -23,7 +23,7 @@ public class Manager {
   //目前仅存储当前值
   @Autowired
   @Getter
-  private IncrementalMerkleWitnessStore merkleWitnessStore;
+  private IncrementalMerkleVoucherStore merkleWitnessStore;
 
   @Autowired
   @Getter
