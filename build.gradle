@@ -2,6 +2,7 @@ group 'Tron'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
+apply plugin: 'maven' // needed to add the install task for jitpack.io
 apply plugin: 'com.google.protobuf'
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'application'
@@ -18,6 +19,8 @@ compileJava.options*.compilerArgs = [
 ]
 
 repositories {
+    maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
+    maven { url 'http://maven.aliyun.com/nexus/content/repositories/jcenter' }
     mavenLocal()
     mavenCentral()
 }
@@ -114,10 +117,10 @@ protobuf {
     }
 }
 
-run {
-    standardInput = System.in
-    mainClassName = 'org.tron.walletcli.Client'
-}
+//run {
+//    standardInput = System.in
+//    mainClassName = 'org.tron.walletcli.Client'
+//}
 
 
 shadowJar {
