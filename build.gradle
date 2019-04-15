@@ -18,6 +18,21 @@ compileJava.options*.compilerArgs = [
         "-Xlint:deprecation", "-Xlint:unchecked", "-Xlint:-options"
 ]
 
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'tron-sdk',
+                'Implementation-Version': version
+    }
+    archiveName 'tron-sdk.jar'
+    duplicatesStrategy DuplicatesStrategy.EXCLUDE
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
+artifacts {
+    // make sure the non shaded jar is not
+    archives shadowJar
+}
+
 repositories {
     maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
     maven { url 'http://maven.aliyun.com/nexus/content/repositories/jcenter' }
@@ -124,7 +139,5 @@ protobuf {
 
 
 shadowJar {
-    baseName = 'wallet-cli'
-    classifier = null
-    version = null
+    archiveName 'tron-sdk.jar'
 }
