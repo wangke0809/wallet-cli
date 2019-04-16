@@ -4,8 +4,10 @@ import static java.util.Arrays.copyOfRange;
 
 import java.math.BigInteger;
 import java.util.Arrays;
+
+import org.apache.commons.lang3.StringUtils;
 import org.spongycastle.math.ec.ECPoint;
-import org.springframework.util.StringUtils;
+//import org.springframework.util.StringUtils;
 import org.tron.common.crypto.ECKey;
 import org.tron.common.crypto.Hash;
 import org.tron.common.crypto.Sha256Hash;
@@ -50,7 +52,7 @@ public class ECKeyDemo {
 
   private static String private2Address(byte[] privateKey) throws CipherException {
     ECKey eCkey;
-    if (StringUtils.isEmpty(privateKey)) {
+    if ("".equals(privateKey)) {
       eCkey = new ECKey(Utils.getRandom());  //Gen new Keypair
     } else {
       eCkey = ECKey.fromPrivate(privateKey);
