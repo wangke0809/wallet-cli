@@ -33,8 +33,8 @@ artifacts {
 }
 
 repositories {
-    maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
-    maven { url 'http://maven.aliyun.com/nexus/content/repositories/jcenter' }
+//    maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
+//    maven { url 'http://maven.aliyun.com/nexus/content/repositories/jcenter' }
     mavenLocal()
     mavenCentral()
 }
@@ -97,7 +97,6 @@ dependencies {
     compile group: 'com.typesafe', name: 'config', version: '1.3.2'
     compile "com.google.code.findbugs:jsr305:3.0.0"
     compile group: 'com.typesafe', name: 'config', version: '1.3.2'
-    compile "org.springframework.cloud:spring-cloud-starter-consul-discovery:${springCloudConsulVersion}"
     compile "org.apache.commons:commons-collections4:4.0"
     compile "org.apache.commons:commons-lang3:3.4"
     compile group: 'com.google.api.grpc', name: 'googleapis-common-protos', version: '0.0.3'
@@ -150,11 +149,12 @@ install.dependsOn(shadowJar);
 
 def installer = install.repositories.mavenInstaller
 def deployer = uploadArchives.repositories.mavenDeployer
-[installer, deployer]*.pom*.whenConfigured {pom ->
-    // force pom dependencies to be empty because we are shading everything
-    pom.dependencies = []
-}
+//[installer, deployer]*.pom*.whenConfigured {pom ->
+//    // force pom dependencies to be empty because we are shading everything
+//    pom.dependencies = []
+//}
 
 shadowJar {
     archiveName 'tron-sdk.jar'
+
 }
