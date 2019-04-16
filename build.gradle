@@ -131,11 +131,29 @@ protobuf {
     }
 }
 
+project.configurations.compile
+jar.enabled = false
+
 //run {
 //    standardInput = System.in
 //    mainClassName = 'org.tron.walletcli.Client'
 //}
 
+// we need this so we can get to the installer and deployer below so we can remove the dependencies
+uploadArchives {
+    repositories {
+        mavenDeployer {
+        }
+    }
+}
+install.dependsOn(shadowJar);
+
+def installer = install.repositories.mavenInstaller
+def deployer = uploadArchives.repositories.mavenDeployer
+[installer, deployer]*.pom*.whenConfigured {pom ->
+    // force pom dependencies to be empty because we are shading everything
+    pom.dependencies = []
+}
 
 shadowJar {
     archiveName 'tron-sdk.jar'
