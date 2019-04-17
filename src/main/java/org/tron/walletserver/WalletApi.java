@@ -148,7 +148,7 @@ public class WalletApi {
         rpcCli = client;
     }
 
-    public static void setGrpcClient(String fullNode, String solidityNode, boolean isMainNet, int rpcVersion) throws Exception {
+    public static void setGrpcClient(String fullNode, String solidityNode, boolean isMainNet, int rpcVersion){
         if (isMainNet) {
             WalletApi.setAddressPreFixByte(CommonConstant.ADD_PRE_FIX_BYTE_MAINNET);
         } else {
@@ -159,8 +159,6 @@ public class WalletApi {
 
         if (!StringUtils.isEmpty(fullNode) && !StringUtils.isEmpty(fullNode)) {
             rpcCli = new GrpcClient(fullNode, solidityNode);
-        } else {
-            throw new Exception("fullNode must not be null!");
         }
 
     }

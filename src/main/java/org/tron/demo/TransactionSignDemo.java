@@ -73,7 +73,9 @@ public class TransactionSignDemo {
     byte[] rawdata = transaction1.getRawData().toByteArray();
     byte[] hash = Sha256Hash.hash(rawdata);
     byte[] sign = ecKey.sign(hash).toByteArray();
-    return transaction1.toBuilder().addSignature(ByteString.copyFrom(sign)).build().toByteArray();
+    byte[] r;
+    transaction1 = transaction1.toBuilder().addSignature(ByteString.copyFrom(sign)).build();
+    return transaction1.toByteArray();
   }
 
   private static Transaction signTransaction2Object(byte[] transaction, byte[] privateKey)
@@ -103,6 +105,7 @@ public class TransactionSignDemo {
   }
 
   public static void main(String[] args) throws InvalidProtocolBufferException, CancelException {
+    WalletApi.setGrpcClient("grpc.shasta.trongrid.io:50051", "", true, 2);
     String privateStr = "f7f013d4aa6abcb306f23f283b6e272afa81e1c9c7057fd09a4088ec5deab2ca";
     byte[] privateBytes = ByteArray.fromHexString(privateStr);
     ECKey ecKey = ECKey.fromPrivate(privateBytes);
@@ -152,6 +155,10 @@ public class TransactionSignDemo {
     if (!Arrays.equals(transaction4, transaction5)){
       System.out.println("transaction4 is not equals to transaction5 !!!!!");
     }
+
+    byte[] hash1 = Sha256Hash.hash(transaction.getRawData().toByteArray());
+    System.out.println(
+            "Receive txid = " + ByteArray.toHexString(hash1));
     boolean result = broadcast(transaction4);
 
     System.out.println(result);
