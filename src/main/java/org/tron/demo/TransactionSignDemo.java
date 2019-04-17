@@ -103,12 +103,12 @@ public class TransactionSignDemo {
   }
 
   public static void main(String[] args) throws InvalidProtocolBufferException, CancelException {
-    String privateStr = "D95611A9AF2A2A45359106222ED1AFED48853D9A44DEFF8DC7913F5CBA727366";
+    String privateStr = "f7f013d4aa6abcb306f23f283b6e272afa81e1c9c7057fd09a4088ec5deab2ca";
     byte[] privateBytes = ByteArray.fromHexString(privateStr);
     ECKey ecKey = ECKey.fromPrivate(privateBytes);
     byte[] from = ecKey.getAddress();
-    byte[] to = WalletApi.decodeFromBase58Check("TGehVcNhud84JDCGrNHKVz9jEAVKUpbuiv");
-    long amount = 100_000_000L; //100 TRX, api only receive trx in drop, and 1 trx = 1000000 drop
+    byte[] to = WalletApi.decodeFromBase58Check("TWmkxJewnMchgRGxF2CAzBiVen1jV1eBPr");
+    long amount = 1_000_000L; //1 TRX, api only receive trx in drop, and 1 trx = 1000000 drop
     Transaction transaction = createTransaction(from, to, amount);
     byte[] transactionBytes = transaction.toByteArray();
 
@@ -128,6 +128,7 @@ public class TransactionSignDemo {
     byte[] transaction4 = signTransaction2Byte(transactionBytes, privateBytes);
     System.out.println("transaction4 ::::: " + ByteArray.toHexString(transaction4));
     Transaction transactionSigned;
+    System.out.println("rpc  version:" + WalletApi.getRpcVersion());
     if (WalletApi.getRpcVersion() == 2) {
       TransactionExtention transactionExtention = WalletApi.signTransactionByApi2(transaction, ecKey.getPrivKeyBytes());
       if (transactionExtention == null) {
