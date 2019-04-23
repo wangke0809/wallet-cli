@@ -148,7 +148,7 @@ public class WalletApi {
         rpcCli = client;
     }
 
-    public static void setGrpcClient(String fullNode, String solidityNode, boolean isMainNet, int rpcVersion){
+    public static void setGrpcClient(String fullNode, String solidityNode, boolean isMainNet, int rpcVersion) {
         if (isMainNet) {
             WalletApi.setAddressPreFixByte(CommonConstant.ADD_PRE_FIX_BYTE_MAINNET);
         } else {
@@ -251,6 +251,9 @@ public class WalletApi {
             this.walletFile.set(0, walletFile);
         }
         this.address = decodeFromBase58Check(walletFile.getAddress());
+    }
+
+    public WalletApi() {
     }
 
     public ECKey getEcKey(WalletFile walletFile, byte[] password) throws CipherException {

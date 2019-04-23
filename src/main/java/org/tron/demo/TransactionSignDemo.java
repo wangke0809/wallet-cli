@@ -105,7 +105,7 @@ public class TransactionSignDemo {
   }
 
   public static void main(String[] args) throws InvalidProtocolBufferException, CancelException {
-    WalletApi.setGrpcClient("grpc.shasta.trongrid.io:50051", "", true, 2);
+    WalletApi.setGrpcClient("grpc.trongrid.io:50051", "", true, 2);
     String privateStr = "f7f013d4aa6abcb306f23f283b6e272afa81e1c9c7057fd09a4088ec5deab2ca";
     byte[] privateBytes = ByteArray.fromHexString(privateStr);
     ECKey ecKey = ECKey.fromPrivate(privateBytes);
