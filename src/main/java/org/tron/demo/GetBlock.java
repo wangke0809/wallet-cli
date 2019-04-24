@@ -71,6 +71,7 @@ public class GetBlock {
             System.out.println("ContractList: " + t.getRawData().getContractList().get(0).getParameter().getTypeUrl());
             System.out.println("ContractList: " + t.getRawData().getContractList().get(0).getParameter().getValue().toStringUtf8());
             long v = Contract.TransferContract.parseFrom(t.getRawData().getContractList().get(0).getParameter().getValue().toByteArray()).getAmount();
+
             System.out.println(v); // 1000000
         }
     }

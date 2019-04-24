@@ -89,7 +89,7 @@ public class ECKeyDemo {
 
     System.out.println("================================================================\r\n");
 
-    address = private2Address(null);
+    address = private2Address(ByteArray.fromHexString(privateKey));
     System.out.println("base58Address: " + address);
 
   }

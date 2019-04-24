@@ -148,6 +148,10 @@ public class WalletApi {
         rpcCli = client;
     }
 
+    public static GrpcClient getGrpcClient() {
+        return rpcCli;
+    }
+
     public static void setGrpcClient(String fullNode, String solidityNode, boolean isMainNet, int rpcVersion) {
         if (isMainNet) {
             WalletApi.setAddressPreFixByte(CommonConstant.ADD_PRE_FIX_BYTE_MAINNET);
