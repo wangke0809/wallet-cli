@@ -4,6 +4,7 @@ version '1.0-SNAPSHOT'
 apply plugin: 'java'
 apply plugin: 'maven' // needed to add the install task for jitpack.io
 apply plugin: 'com.google.protobuf'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 sourceCompatibility = 1.8
 targetCompatibility = JavaVersion.VERSION_1_8
