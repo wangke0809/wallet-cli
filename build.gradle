@@ -17,7 +17,24 @@ compileJava.options*.compilerArgs = [
         "-Xlint:deprecation", "-Xlint:unchecked", "-Xlint:-options"
 ]
 
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'tron-sdk',
+                'Implementation-Version': version
+    }
+    archiveName 'tron-sdk.jar'
+    duplicatesStrategy DuplicatesStrategy.EXCLUDE
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
+artifacts {
+    // make sure the non shaded jar is not
+    archives shadowJar
+}
+
 repositories {
+//    maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
+//    maven { url 'http://maven.aliyun.com/nexus/content/repositories/jcenter' }
     mavenLocal()
     mavenCentral()
 }
@@ -37,6 +54,9 @@ sourceSets {
 buildscript {
     repositories {
         mavenLocal()
+        maven {
+            url "https://cdn.lfrs.sl/repository.liferay.com/nexus/content/groups/public"
+        }
         mavenCentral()
     }
     ext {
@@ -72,12 +92,12 @@ dependencies {
     compile group: 'io.grpc', name: 'grpc-stub', version: '1.9.0'
 
     compile group: 'com.googlecode.protobuf-java-format', name: 'protobuf-java-format', version: '1.4'
+    compile "org.springframework.cloud:spring-cloud-starter-consul-discovery:${springCloudConsulVersion}"
     compile "com.madgag.spongycastle:core:1.53.0.0"
     compile "com.madgag.spongycastle:prov:1.53.0.0"
     compile group: 'com.typesafe', name: 'config', version: '1.3.2'
     compile "com.google.code.findbugs:jsr305:3.0.0"
     compile group: 'com.typesafe', name: 'config', version: '1.3.2'
-    compile "org.springframework.cloud:spring-cloud-starter-consul-discovery:${springCloudConsulVersion}"
     compile "org.apache.commons:commons-collections4:4.0"
     compile "org.apache.commons:commons-lang3:3.4"
     compile group: 'com.google.api.grpc', name: 'googleapis-common-protos', version: '0.0.3'
@@ -109,4 +129,33 @@ protobuf {
             }
         }
     }
+}
+
+project.configurations.compile
+jar.enabled = false
+
+//run {
+//    standardInput = System.in
+//    mainClassName = 'org.tron.walletcli.Client'
+//}
+
+// we need this so we can get to the installer and deployer below so we can remove the dependencies
+uploadArchives {
+    repositories {
+        mavenDeployer {
+        }
+    }
+}
+install.dependsOn(shadowJar);
+
+def installer = install.repositories.mavenInstaller
+def deployer = uploadArchives.repositories.mavenDeployer
+//[installer, deployer]*.pom*.whenConfigured {pom ->
+//    // force pom dependencies to be empty because we are shading everything
+//    pom.dependencies = []
+//}
+
+shadowJar {
+    archiveName 'tron-sdk.jar'
+
 }
