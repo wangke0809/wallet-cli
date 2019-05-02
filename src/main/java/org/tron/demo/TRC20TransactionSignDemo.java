@@ -3,22 +3,21 @@ package org.tron.demo;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import java.util.Arrays;
-import java.util.Optional;
-
-import org.tron.api.GrpcAPI.Return;
-import org.tron.api.GrpcAPI.TransactionExtention;
 import org.tron.common.crypto.ECKey;
 import org.tron.common.crypto.Sha256Hash;
 import org.tron.common.utils.ByteArray;
 import org.tron.core.exception.CancelException;
+import org.tron.keystore.Wallet;
 import org.tron.protos.Contract;
 import org.tron.protos.Protocol;
 import org.tron.protos.Protocol.Block;
 import org.tron.protos.Protocol.Transaction;
 import org.tron.walletserver.WalletApi;
 
-public class TransactionSignDemo {
+import java.util.Arrays;
+import java.util.Optional;
+
+public class TRC20TransactionSignDemo {
 
   public static Transaction setReference(Transaction transaction, Block newestBlock) {
     long blockHeight = newestBlock.getBlockHeader().getRawData().getNumber();
@@ -41,30 +40,40 @@ public class TransactionSignDemo {
   }
 
 
-  public static Transaction createTransaction(byte[] from, byte[] to, long amount) {
+  public static Transaction createTransaction(byte[] tokenAddress, byte[] from, byte[] to, long amount) {
     Transaction.Builder transactionBuilder = Transaction.newBuilder();
     Block newestBlock = WalletApi.getBlock(-1);
 
     Transaction.Contract.Builder contractBuilder = Transaction.Contract.newBuilder();
-    Contract.TransferContract.Builder transferContractBuilder = Contract.TransferContract
-        .newBuilder();
-    transferContractBuilder.setAmount(amount);
+    Contract.TriggerSmartContract.Builder triggerSmartContract = Contract.TriggerSmartContract.newBuilder();
     ByteString bsTo = ByteString.copyFrom(to);
+
     ByteString bsOwner = ByteString.copyFrom(from);
-    transferContractBuilder.setToAddress(bsTo);
-    transferContractBuilder.setOwnerAddress(bsOwner);
+    ByteString token = ByteString.copyFrom(tokenAddress);
+
+    triggerSmartContract.setContractAddress(token);
+    triggerSmartContract.setOwnerAddress(bsOwner);
+    String data = "0xa9059cbb00000000000000000000000016afde1644cab31a1f8df7ed0ea5625c36a6d62500000000000000000000000000000000000000000000000000000000000186a0";
+    byte[] dataByte = ByteArray.fromHexString(data);
+    ByteString dataByteString = ByteString.copyFrom(dataByte);
+    triggerSmartContract.setData(dataByteString);
+
+
+
     try {
-      Any any = Any.pack(transferContractBuilder.build());
+      Any any = Any.pack(triggerSmartContract.build());
       contractBuilder.setParameter(any);
     } catch (Exception e) {
       return null;
     }
-    contractBuilder.setType(Transaction.Contract.ContractType.TransferContract);
+    contractBuilder.setType(Transaction.Contract.ContractType.TriggerSmartContract);
     transactionBuilder.getRawDataBuilder().addContract(contractBuilder)
         .setTimestamp(System.currentTimeMillis())
-        .setExpiration(newestBlock.getBlockHeader().getRawData().getTimestamp() + 10 * 60 * 60 * 1000);
+        .setExpiration(newestBlock.getBlockHeader().getRawData().getTimestamp() + 10 * 60 * 60 * 1000).setFeeLimit(1);
+
     Transaction transaction = transactionBuilder.build();
     Transaction refTransaction = setReference(transaction, newestBlock);
+
     return refTransaction;
   }
 
@@ -111,77 +120,22 @@ public class TransactionSignDemo {
 
   public static void main(String[] args) throws InvalidProtocolBufferException, CancelException {
     WalletApi.setGrpcClient("grpc.shasta.trongrid.io:50051", "grpc.shasta.trongrid.io:50052", true, 2);
-    String privateStr = "901f2863ca2752362ad12ef7c90c6ccc17bc6fe5ef753df95f2e706980bd94cd";
+    String privateStr = "cc72d47613396b760b468bb88063b0facc8870d289c2ab272c57f58233956f34";
     byte[] privateBytes = ByteArray.fromHexString(privateStr);
     ECKey ecKey = ECKey.fromPrivate(privateBytes);
     byte[] from = ecKey.getAddress();
-    byte[] to = WalletApi.decodeFromBase58Check("TNNUjZhXEEYBbWe6eoV6dgsgyWrhcYct2g");
-    long amount = 9_00_000L; //1 TRX, api only receive trx in drop, and 1 trx = 1000000 drop
-//    Transaction transaction = createTransaction(from, to, amount);
-//    byte[] transactionBytes = transaction.toByteArray();
+    byte[] to = WalletApi.decodeFromBase58Check("TC3AYma8o31DeJwbScuBtts7asxZfqMkJr");
+    byte[] tokenAddress = WalletApi.decodeFromBase58Check("TDqLcrvLxkGyFGuES6fJN1qpfcN4b9cd2x");
+    long amount = 100000; //1 TRX, api only receive trx in drop, and 1 trx = 1000000 drop
+    byte[] to2 = Arrays.copyOfRange(to, 1, to.length);
+    System.out.println(to.length);
+    System.out.println(to2.length);
+    System.out.println(ByteArray.toHexString(to));
+    System.out.println(ByteArray.toHexString(to2));
 
-    /*
-    //sign a transaction
-    Transaction transaction1 = TransactionUtils.sign(transaction, ecKey);
-    //get byte transaction
-    byte[] transaction2 = transaction1.toByteArray();
-    System.out.println("transaction2 ::::: " + ByteArray.toHexString(transaction2));
-
-    //sign a transaction in byte format and return a Transaction object
-    Transaction transaction3 = signTransaction2Object(transactionBytes, privateBytes);
-    System.out.println("transaction3 ::::: " + ByteArray.toHexString(transaction3.toByteArray()));
-    */
-
-    //sign a transaction in byte format and return a Transaction in byte format
-//    byte[] transaction4 = signTransaction2Byte(transactionBytes, privateBytes);
-//    System.out.println("transaction4 ::::: " + ByteArray.toHexString(transaction4));
-//    Transaction transactionSigned;
-//    System.out.println("rpc  version:" + WalletApi.getRpcVersion());
-//
-//    if (WalletApi.getRpcVersion() == 2) {
-//      TransactionExtention transactionExtention = WalletApi.signTransactionByApi2(transaction, ecKey.getPrivKeyBytes());
-//      if (transactionExtention == null) {
-//        System.out.println("transactionExtention is null");
-//        return;
-//      }
-//      Return ret = transactionExtention.getResult();
-//      if (!ret.getResult()) {
-//        System.out.println("Code = " + ret.getCode());
-//        System.out.println("Message = " + ret.getMessage().toStringUtf8());
-//        return;
-//      }
-//      System.out.println(
-//          "Receive txid = " + ByteArray.toHexString(transactionExtention.getTxid().toByteArray()));
-//      transactionSigned = transactionExtention.getTransaction();
-//    } else {
-//      transactionSigned = WalletApi.signTransactionByApi(transaction, ecKey.getPrivKeyBytes());
-//    }
-//    byte[] transaction5 = transactionSigned.toByteArray();
-//    System.out.println("transaction5 ::::: " + ByteArray.toHexString(transaction5));
-//    if (!Arrays.equals(transaction4, transaction5)){
-//      System.out.println("transaction4 is not equals to transaction5 !!!!!");
-//    }
-
-//    byte[] hash1 = Sha256Hash.hash(transaction.getRawData().toByteArray());
-//    System.out.println(
-//            "Receive txid = " + ByteArray.toHexString(hash1));
-//    String txHash = ByteArray.toHexString(hash1);
-//    Optional<Transaction> tx = WalletApi.getTransactionById(txHash);
-//    if (tx.isPresent()){
-//      System.out.println("tx:");
-//      System.out.println(tx.get());
-//    }
-//    Optional<Protocol.TransactionInfo>  txInfo = WalletApi.getTransactionInfoById(txHash);
-//    if(txInfo.isPresent()){
-//      System.out.println("info:");
-//      System.out.println(txInfo.get());
-//    }
-//    System.out.println("-----------b--------------");
-//    boolean result = broadcast(transaction4);
-//    System.out.println("broadcast: " + result);
     try {
       while (true) {
-        Transaction transaction = createTransaction(from, to, amount);
+        Transaction transaction = createTransaction(tokenAddress, from, to, amount);
         byte[] transactionBytes = transaction.toByteArray();
         byte[] transaction4 = signTransaction2Byte(transactionBytes, privateBytes);
         boolean result = broadcast(transaction4);
@@ -208,6 +162,7 @@ public class TransactionSignDemo {
 
         }
         Thread.sleep(5000);
+        break;
       }
     }catch (Exception e){
       System.out.println(e);

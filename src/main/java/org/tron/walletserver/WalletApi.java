@@ -108,7 +108,9 @@ public class WalletApi {
     private static byte addressPreFixByte = CommonConstant.ADD_PRE_FIX_BYTE_TESTNET;
     private static int rpcVersion = 0;
 
-    private static GrpcClient rpcCli = init();
+//    private static GrpcClient rpcCli = init();
+    private static GrpcClient rpcCli = null;
+
 
 //  static {
 //    new Timer().schedule(new TimerTask() {

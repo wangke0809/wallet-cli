@@ -1,6 +1,5 @@
 package org.tron.demo;
 
-import org.spongycastle.util.encoders.Base64;
 import org.springframework.util.StringUtils;
 import org.tron.common.crypto.ECKey;
 import org.tron.common.crypto.Sha256Hash;
@@ -20,49 +19,18 @@ import java.util.Optional;
  * @description: TODO
  * @date 2019-04-23 16:53
  */
-public class getTransaction {
-    public static BigInteger getTokenValueByDecimals(BigDecimal value, int decimals) {
-        if (value == null) {
-            return new BigInteger("0");
-        }
-        BigInteger bigInteger = new BigInteger(String.valueOf(value.multiply(BigDecimal.valueOf(10).pow(decimals)).stripTrailingZeros().toPlainString()).split("\\.")[0]);
-        return bigInteger;
-    }
+public class getTransaction2 {
 
-    public static BigDecimal getValueByTokenDecimals(String value, Long decimals) {
-        if (StringUtils.isEmpty(value)) {
-            return new BigDecimal("0");
-        }
-
-        int length = value.length();
-        int de = decimals.intValue();
-        //超过位数，在指定地方加入点
-        if (length > de) {
-            int endIndex = length - de;
-            StringBuilder sb = new StringBuilder(value);
-            sb.insert(endIndex, ".");
-            BigDecimal bigDecimal = new BigDecimal(sb.toString());
-            bigDecimal = bigDecimal.stripTrailingZeros();
-            return bigDecimal;
-        } else {
-            //未超过位数，补齐位数
-            int dif = de - length;
-            for (int i = 0; i < dif; i++) {
-                value = "0" + value;
-            }
-            value = "0." + value;
-            return new BigDecimal(value).stripTrailingZeros();
-        }
-    }
 
     public static void main(String[] args) throws Exception {
-        WalletApi.setGrpcClient("grpc.shasta.trongrid.io:50051", "grpc.shasta.trongrid.io:50052", false, 2);
+        WalletApi.setGrpcClient("grpc.shasta.trongrid.io:50051", "grpc.shasta.trongrid.io:50052", true, 2);
 
-        // 4459511117f49d05d0326ae68ef8131d617b480b3e8c5d13aebf6d387816d7a0
-        // 773ef7fbf4f8bbea528dbf3c3e8ee1c96bf4ff1fec9ef023006f45a22d576152
-        // net use c62b260d96579e621c7f74f2936d587f2a5a34d9d83c0df45475254a255c5d2b
-        // net fee cc64b2db2c1541dfaa812400eaec2e792647309690df21d0dc84d133f32ba77c
-        String txHash = "cc64b2db2c1541dfaa812400eaec2e792647309690df21d0dc84d133f32ba77c";
+
+        // transfer success 92f3e06f035fc069df39e329232ba6ac722c127d96cdfbb39922f0649d6b6807
+        // transfer failure 10e2efbe28967a9263e347a1991c4cfb1985e4b9edf71ee290526ae701c16dba
+        // mainnet success f777a54264534692f6de607335852784bd686308ff3048ef8355fe48a6d59f09
+
+        String txHash = "db24242127115a737c0d72224069df913edc5021d25b7414575d792991bd0cbb";
         Optional<Protocol.Transaction> tx = WalletApi.getTransactionById(txHash);
         if (tx.isPresent()) {
             Protocol.Transaction t = tx.get();
@@ -118,10 +86,49 @@ public class getTransaction {
             System.out.println("blocknum: " + txInfo2.get().getBlockNumber());
             System.out.println(ByteArray.toHexString(txInfo2.get().getId().toByteArray()));
             System.out.println(txInfo2.get().getFee());
-            System.out.println(getTokenValueByDecimals(BigDecimal.valueOf(1), 6));
-            System.out.println(getValueByTokenDecimals("1", 6L));
+//            System.out.println(getTokenValueByDecimals(BigDecimal.valueOf(1), 6));
+//            System.out.println(getValueByTokenDecimals("1", 6L));
             System.out.println(BigDecimal.valueOf(0).divide(BigDecimal.valueOf(1000000)));
+
+            int count = txInfo2.get().getLogCount();
+            System.out.println("count: " + count);
+            Protocol.TransactionInfo txinfo2 = txInfo2.get();
+            System.out.println(txinfo2.getLog(0).getTopicsCount());
+
+            Protocol.TransactionInfo.Log logs = txinfo2.getLog(0);
+            // tokenAddress
+            System.out.println(ByteArray.toHexString(logs.getAddress().toByteArray()));
+//            byte[] tokenAddress = new byte[21];
+//            tokenAddress[0] = WalletApi.getAddressPreFixByte();
+//            System.arraycopy(logs.getAddress().toByteArray(), 0, tokenAddress, 1, 20);
+//            String tokenAddressStr = WalletApi.encode58Check(tokenAddress);
+            System.out.println("tokenaddress: " + getAddressFromHash(logs.getAddress().toByteArray()));
+            // transfer
+            System.out.println(ByteArray.toHexString(logs.getTopics(0).toByteArray()));
+            // from
+            System.out.println(ByteArray.toHexString(logs.getTopics(1).toByteArray()));
+            System.out.println("from: " + getAddressFromHash(logs.getTopics(1).toByteArray()));
+            // to
+            System.out.println(ByteArray.toHexString(logs.getTopics(2).toByteArray()));
+            System.out.println("to: " + getAddressFromHash(logs.getTopics(2).toByteArray()));
+            // value
+            System.out.println(ByteArray.toHexString(logs.getData().toByteArray()));
+            long value = ByteArray.toLong(logs.getData().toByteArray());
+            System.out.println("value: " + value);
+
         }
 
+    }
+
+    public static String getAddressFromHash(byte[] hash) {
+        if (hash.length != 20 && hash.length != 32) return null;
+        byte[] address = new byte[21];
+        address[0] = WalletApi.getAddressPreFixByte();
+        if (hash.length == 20) {
+            System.arraycopy(hash, 0, address, 1, 20);
+        } else {
+            System.arraycopy(hash, 12, address, 1, 20);
+        }
+        return WalletApi.encode58Check(address);
     }
 }
