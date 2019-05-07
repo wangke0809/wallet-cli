@@ -108,7 +108,7 @@ public class WalletApi {
     private static byte addressPreFixByte = CommonConstant.ADD_PRE_FIX_BYTE_TESTNET;
     private static int rpcVersion = 0;
 
-    private static GrpcClient rpcCli = init();
+    private static GrpcClient rpcCli = null;
 
 //  static {
 //    new Timer().schedule(new TimerTask() {
@@ -148,6 +148,8 @@ public class WalletApi {
         rpcCli = client;
     }
 
+    public static GrpcClient getGrpcClient(){return  rpcCli;}
+
     public static void setGrpcClient(String fullNode, String solidityNode, boolean isMainNet, int rpcVersion) {
         if (isMainNet) {
             WalletApi.setAddressPreFixByte(CommonConstant.ADD_PRE_FIX_BYTE_MAINNET);
@@ -157,9 +159,7 @@ public class WalletApi {
 
         WalletApi.rpcVersion = rpcVersion;
 
-        if (!StringUtils.isEmpty(fullNode) && !StringUtils.isEmpty(fullNode)) {
-            rpcCli = new GrpcClient(fullNode, solidityNode);
-        }
+        rpcCli = new GrpcClient(fullNode, solidityNode);
 
     }
 
