@@ -23,18 +23,40 @@ public class getTransaction2 {
 
 
     public static void main(String[] args) throws Exception {
-        WalletApi.setGrpcClient("grpc.shasta.trongrid.io:50051", "grpc.shasta.trongrid.io:50052", true, 2);
+//        WalletApi.setGrpcClient("grpc.shasta.trongrid.io:50051", "grpc.shasta.trongrid.io:50052", true, 2);
+        WalletApi.setGrpcClient("grpc.trongrid.io:50051", "grpc.trongrid.io:50052", true, 2);
 
 
         // transfer success 92f3e06f035fc069df39e329232ba6ac722c127d96cdfbb39922f0649d6b6807
         // transfer failure 10e2efbe28967a9263e347a1991c4cfb1985e4b9edf71ee290526ae701c16dba
         // mainnet success f777a54264534692f6de607335852784bd686308ff3048ef8355fe48a6d59f09
-
-        String txHash = "db24242127115a737c0d72224069df913edc5021d25b7414575d792991bd0cbb";
+        // trc20 fail 47f9da3f98a3181f385469ec649b1df1d00592887613dadd76546dfe5fb3dc88
+        // trc20 6cf3638d888bff35e388a1899537a54157e2785cd45771e72466982820c455a7
+        // create account d019d2b9cbf416307ee8dc822a9da9b5f06489cd5a737a907211d6928a38a8b7
+        // trc20 to 未激活地址 6ff195dd300c553a570b89833195d552680930034bb8d0136b0f4ecd66753a67
+        // out of enegry 激活地址，没有trx，trc20 bb7ecbb9c3ce4da7066b6bec9eca636d5c0e065c6d8045727b226cbdeb47ae06
+        // 充值 trx 后 trc20 4fcfb8185d6aae3770caa21d045782c1bb0c615ffdd5b7cf3e06c7db0fb2d7b5
+        String txHash = "4f3f78de1cf89a2a14d7c1694a706e5bb61f5dd778e842ba3fd2d0ada0ba1677";
         Optional<Protocol.Transaction> tx = WalletApi.getTransactionById(txHash);
         if (tx.isPresent()) {
             Protocol.Transaction t = tx.get();
+            System.out.println("tx:");
             System.out.println(tx.get());
+            Contract.TriggerSmartContract triggerSmartContract = Contract.TriggerSmartContract.parseFrom(tx.get().getRawData().getContract(0).getParameter().getValue().toByteArray());
+            System.out.println("tri:" + triggerSmartContract);
+            String value = ByteArray.toHexString(triggerSmartContract.getData().toByteArray());
+            if(value.substring(0, 8).equals("a9059cbb")){
+                System.out.println("transfer");
+            }
+            String toAddress1 = value.substring(32, 72);
+            System.out.println(toAddress1);
+            String token_value =value.substring(value.length()-64,value.length());
+            System.out.println("toAddress: " + getAddressFromHash(ByteArray.fromHexString(toAddress1)));
+            System.out.println("tokenValue: " + ByteArray.toLong(ByteArray.fromHexString(token_value)));
+            System.out.println("datavalue: " + ByteArray.toHexString(triggerSmartContract.getData().toByteArray()));
+            System.out.println("fromaddress: " + WalletApi.encode58Check(triggerSmartContract.getOwnerAddress().toByteArray()));
+            System.out.println("tokenAddress: " + WalletApi.encode58Check(triggerSmartContract.getContractAddress().toByteArray()));
+
             System.out.println(ByteArray.toHexString(tx.get().getRawData().getRefBlockBytes().toByteArray()));
             System.out.println(ByteArray.toHexString(tx.get().getRawData().getRefBlockHash().toByteArray()));
             System.out.println("ContractList: " + t.getRawData().getContractList());
@@ -116,6 +138,7 @@ public class getTransaction2 {
             long value = ByteArray.toLong(logs.getData().toByteArray());
             System.out.println("value: " + value);
 
+            System.out.println("res: " + ByteArray.toLong(txinfo2.getContractResult(0).toByteArray()));
         }
 
     }

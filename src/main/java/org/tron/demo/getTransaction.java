@@ -56,7 +56,7 @@ public class getTransaction {
     }
 
     public static void main(String[] args) throws Exception {
-        WalletApi.setGrpcClient("grpc.shasta.trongrid.io:50051", "grpc.shasta.trongrid.io:50052", false, 2);
+        WalletApi.setGrpcClient("grpc.shasta.trongrid.io:50051", "grpc.shasta.trongrid.io:50052", true, 2);
 
         // 4459511117f49d05d0326ae68ef8131d617b480b3e8c5d13aebf6d387816d7a0
         // 773ef7fbf4f8bbea528dbf3c3e8ee1c96bf4ff1fec9ef023006f45a22d576152
@@ -74,6 +74,9 @@ public class getTransaction {
             System.out.println("type: " + t.getRawData().getContractList().get(0).getType().toString());
             System.out.println("ContractList: " + t.getRawData().getContractList().get(0).getParameter().getValue().toStringUtf8());
             long v = Contract.TransferContract.parseFrom(t.getRawData().getContractList().get(0).getParameter().getValue().toByteArray()).getAmount();
+            Contract.TransferContract transferContract = Contract.TransferContract.parseFrom(t.getRawData().getContractList().get(0).getParameter().getValue().toByteArray());
+            System.out.println("transferContract:" + transferContract);
+            System.out.println("owner: " + WalletApi.encode58Check(transferContract.getOwnerAddress().toByteArray()));
             Contract.TransferContract contract = Contract.TransferContract.parseFrom(t.getRawData().getContractList().get(0).getParameter().getValue().toByteArray());
             byte[] toAddress = contract.getToAddress().toByteArray();
             System.out.println(toAddress.length);

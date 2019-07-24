@@ -15,10 +15,13 @@ import java.math.BigDecimal;
 public class getBalance {
     public static void main(String[] args) {
         WalletApi.setGrpcClient("grpc.shasta.trongrid.io:50051", "grpc.shasta.trongrid.io:50052", true, 2);
-        byte[] to = WalletApi.decodeFromBase58Check("TJt33B4TmGVYWxwNSRWtRiq3gZdiw4Dyx9");
+//        WalletApi.setGrpcClient("grpc.trongrid.io:50051", "grpc.trongrid.io:50052", true, 2);
+
+        byte[] to = WalletApi.decodeFromBase58Check("TDA4gaMwQtZKT8V7gUbTzbLvi1NP4Ue4PZ");
         try{
             GrpcAPI.AccountResourceMessage m = WalletApi.getAccountResource(to);
             GrpcAPI.AccountNetMessage m2 = WalletApi.getAccountNet(to);
+            System.out.println(WalletApi.queryAccount(to).getCreateTime());
             Protocol.Account a = WalletApi.queryAccount(to);
             BigDecimal b = BigDecimal.valueOf(a.getBalance());
             System.out.println(m);

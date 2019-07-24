@@ -7,7 +7,6 @@ import org.tron.common.crypto.ECKey;
 import org.tron.common.crypto.Sha256Hash;
 import org.tron.common.utils.ByteArray;
 import org.tron.core.exception.CancelException;
-import org.tron.keystore.Wallet;
 import org.tron.protos.Contract;
 import org.tron.protos.Protocol;
 import org.tron.protos.Protocol.Block;
@@ -17,7 +16,7 @@ import org.tron.walletserver.WalletApi;
 import java.util.Arrays;
 import java.util.Optional;
 
-public class TRC20TransactionSignDemo {
+public class createAccount {
 
   public static Transaction setReference(Transaction transaction, Block newestBlock) {
     long blockHeight = newestBlock.getBlockHeader().getRawData().getNumber();
@@ -40,37 +39,25 @@ public class TRC20TransactionSignDemo {
   }
 
 
-  public static Transaction createTransaction(byte[] tokenAddress, byte[] from, byte[] to, long amount) {
+  public static Transaction createTransaction(byte[] owner, byte[] address) {
     Transaction.Builder transactionBuilder = Transaction.newBuilder();
     Block newestBlock = WalletApi.getBlock(-1);
 
     Transaction.Contract.Builder contractBuilder = Transaction.Contract.newBuilder();
-    Contract.TriggerSmartContract.Builder triggerSmartContract = Contract.TriggerSmartContract.newBuilder();
-    ByteString bsTo = ByteString.copyFrom(to);
-
-    ByteString bsOwner = ByteString.copyFrom(from);
-    ByteString token = ByteString.copyFrom(tokenAddress);
-
-    triggerSmartContract.setContractAddress(token);
-    triggerSmartContract.setOwnerAddress(bsOwner);
-//    String data = "0xa9059cbb00000000000000000000000016afde1644cab31a1f8df7ed0ea5625c36a6d62500000000000000000000000000000000000000000000000000000000000186a0";
-    String data = "0xa9059cbb0000000000000000000000005457d1d10e5e39292a170a0d7ff834186265c34600000000000000000000000000000000000000000000000000000000000186a0";
-    byte[] dataByte = ByteArray.fromHexString(data);
-    ByteString dataByteString = ByteString.copyFrom(dataByte);
-    triggerSmartContract.setData(dataByteString);
-
-
+    Contract.AccountCreateContract.Builder builder = Contract.AccountCreateContract.newBuilder();
+    builder.setOwnerAddress(ByteString.copyFrom(owner));
+    builder.setAccountAddress(ByteString.copyFrom(address));
 
     try {
-      Any any = Any.pack(triggerSmartContract.build());
+      Any any = Any.pack(builder.build());
       contractBuilder.setParameter(any);
     } catch (Exception e) {
       return null;
     }
-    contractBuilder.setType(Transaction.Contract.ContractType.TriggerSmartContract);
+    contractBuilder.setType(Transaction.Contract.ContractType.AccountCreateContract);
     transactionBuilder.getRawDataBuilder().addContract(contractBuilder)
         .setTimestamp(System.currentTimeMillis())
-        .setExpiration(newestBlock.getBlockHeader().getRawData().getTimestamp() + 10 * 60 * 60 * 1000).setFeeLimit(10000000);
+        .setExpiration(newestBlock.getBlockHeader().getRawData().getTimestamp() + 10 * 60 * 60 * 1000).setFeeLimit(1);
 
     Transaction transaction = transactionBuilder.build();
     Transaction refTransaction = setReference(transaction, newestBlock);
@@ -125,11 +112,7 @@ public class TRC20TransactionSignDemo {
     byte[] privateBytes = ByteArray.fromHexString(privateStr);
     ECKey ecKey = ECKey.fromPrivate(privateBytes);
     byte[] from = ecKey.getAddress();
-    // TC3AYma8o31DeJwbScuBtts7asxZfqMkJr
-    // TExqJ79q4znGTNTQJXVbpP5wBysBjG4L6g
-    byte[] to = WalletApi.decodeFromBase58Check("TExqJ79q4znGTNTQJXVbpP5wBysBjG4L6g");
-    byte[] tokenAddress = WalletApi.decodeFromBase58Check("TDqLcrvLxkGyFGuES6fJN1qpfcN4b9cd2x");
-    long amount = 100000; // 0.1 usdt
+    byte[] to = WalletApi.decodeFromBase58Check("TDA4gaMwQtZKT8V7gUbTzbLvi1NP4Ue4PZ");
     byte[] to2 = Arrays.copyOfRange(to, 1, to.length);
     System.out.println(to.length);
     System.out.println(to2.length);
@@ -138,7 +121,7 @@ public class TRC20TransactionSignDemo {
 
     try {
       while (true) {
-        Transaction transaction = createTransaction(tokenAddress, from, to, amount);
+        Transaction transaction = createTransaction(from, to);
         byte[] transactionBytes = transaction.toByteArray();
         byte[] transaction4 = signTransaction2Byte(transactionBytes, privateBytes);
         boolean result = broadcast(transaction4);
