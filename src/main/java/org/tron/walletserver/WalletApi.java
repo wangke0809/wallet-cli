@@ -95,8 +95,6 @@ import org.tron.protos.Protocol.TransactionInfo;
 import org.tron.protos.Protocol.TransactionSign;
 import org.tron.protos.Protocol.Witness;
 
-import javax.el.ValueExpression;
-
 
 public class WalletApi {
 
