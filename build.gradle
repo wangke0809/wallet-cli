@@ -84,7 +84,7 @@ dependencies {
     compile "org.apache.commons:commons-lang3:3.4"
     compile group: 'com.google.api.grpc', name: 'googleapis-common-protos', version: '0.0.3'
     compile 'com.alibaba:fastjson:1.2.47'
-    compile group: 'org.bouncycastle', name: 'bcprov-jdk15on', version: '1.55'
+    compile group: 'org.bouncycastle', name: 'bcprov-jdk15to18', version: '1.63'
 }
 
 protobuf {
