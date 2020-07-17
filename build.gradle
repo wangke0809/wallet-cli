@@ -69,9 +69,9 @@ dependencies {
     compile 'com.maxmind.geoip2:geoip2:2.10.0'
 
     // google grpc
-    compile group: 'io.grpc', name: 'grpc-netty', version: '1.9.0'
-    compile group: 'io.grpc', name: 'grpc-protobuf', version: '1.9.0'
-    compile group: 'io.grpc', name: 'grpc-stub', version: '1.9.0'
+    compile group: 'io.grpc', name: 'grpc-netty', version: '1.17.1'
+    compile group: 'io.grpc', name: 'grpc-protobuf', version: '1.17.1'
+    compile group: 'io.grpc', name: 'grpc-stub', version: '1.17.1'
 
     compile group: 'com.googlecode.protobuf-java-format', name: 'protobuf-java-format', version: '1.4'
     compile "com.madgag.spongycastle:core:1.53.0.0"

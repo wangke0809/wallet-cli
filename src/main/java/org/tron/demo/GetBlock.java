@@ -14,6 +14,7 @@ import java.util.Optional;
 
 public class GetBlock {
     public static void main(String[] args) throws Exception {
+        WalletApi.setGrpcClient("grpc.shasta.trongrid.io:50051", "grpc.shasta.trongrid.io:50052", true, 2);
         Optional<GrpcAPI.BlockList> p = WalletApi.getBlockByLatestNum(1);
         if(p.isPresent()){
             p.get().getBlockCount();
