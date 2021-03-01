@@ -72,6 +72,14 @@ public class GrpcClient {
 //    blockingStub = WalletGrpc.newBlockingStub(channel);
 //  }
 
+  public WalletGrpc.WalletBlockingStub getBlockingStubFull(){
+    return this.blockingStubFull;
+  }
+
+  public WalletSolidityGrpc.WalletSolidityBlockingStub getBlockingStubSolidity(){
+      return this.blockingStubSolidity;
+  }
+
   public GrpcClient(String fullnode, String soliditynode) {
     if (!StringUtils.isEmpty(fullnode)) {
       channelFull = ManagedChannelBuilder.forTarget(fullnode)
